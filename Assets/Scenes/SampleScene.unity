@@ -246,13 +246,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   nodeCoordinates: []
   file: {fileID: 102900000, guid: 20c3723d235be214aa97281447955182, type: 3}
-  populationSize: 2000
+  shader: {fileID: 7200000, guid: e8991c085d3495542b951ad547acffc8, type: 3}
+  populationSize: 2
   maxGenerations: 100000
   population: []
-  parents: []
-  children: []
-  pMutation: 0.2
-  pCrossover: 0.9
+  chromosomeSize: 0
+  pMutation: 0.1
+  pCrossover: 0.99
 --- !u!4 &1699290910
 Transform:
   m_ObjectHideFlags: 0

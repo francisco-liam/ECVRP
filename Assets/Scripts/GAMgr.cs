@@ -1,11 +1,10 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Xml.Schema;
 using UnityEditor;
 using UnityEngine;
+
 
 public class GAMgr : MonoBehaviour
 {
@@ -13,12 +12,14 @@ public class GAMgr : MonoBehaviour
     public List<Vector2> nodeCoordinates;
     List<int> nodeNumbers;
     public UnityEngine.Object file;
+    public ComputeShader shader;
 
     public int populationSize;
     public int maxGenerations;
     public List<Individual> population;
-    public List<Individual> parents;
-    public List<Individual> children;
+    List<Individual> parents;
+    List<Individual> children;
+    public int chromosomeSize;
 
     public float pMutation;
     public float pCrossover;
@@ -33,7 +34,6 @@ public class GAMgr : MonoBehaviour
         InitializeNodes();
         InitializePopulation();
         RunGA();
-
     }
 
     bool readingCoords = false;
@@ -76,6 +76,8 @@ public class GAMgr : MonoBehaviour
             List<int> shuffledList = nodeNumbers.OrderBy(_ => rand.Next()).ToList();
             population.Add(new Individual(shuffledList));
         }
+
+        chromosomeSize = population[0].chromosome.Count;
     }
 
     //PMX crossover
@@ -211,7 +213,7 @@ public class GAMgr : MonoBehaviour
             foreach (Individual individual in population)
                 averagePathLength += individual.pathLength;
             averagePathLength /= population.Count;
-            Debug.Log(averagePathLength);
+            Debug.Log("Generation: " + generation + " " + averagePathLength);
             generation++;
         }
     }
