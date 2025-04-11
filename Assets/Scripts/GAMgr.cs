@@ -1,160 +1,90 @@
+using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
-using UnityEditor;
 using UnityEngine;
+using System.Linq;
+using Random = UnityEngine.Random;
 
+[System.Serializable]
+public enum ProblemType
+{
+    TSP,
+    ECVRP
+}
 
 public class GAMgr : MonoBehaviour
 {
     public static GAMgr inst;
-    public List<Vector2> nodeCoordinates;
-    List<int> nodeNumbers;
-    public UnityEngine.Object file;
-    public ComputeShader shader;
-
-    public int populationSize;
-    public int maxGenerations;
+    public ProblemType problemType;
     public List<Individual> population;
-    List<Individual> parents;
-    List<Individual> children;
+    public int populationSize;
     public int chromosomeSize;
-
     public float pMutation;
     public float pCrossover;
+    public int maxGenerations;
 
-    string filePath;
+    Dictionary<ProblemType, Func<List<int>, Individual>> problemFactory;
+
+    List<Individual> parents;
+    List<Individual> children;
+    List<Individual> parentsAndChildren;
 
     // Start is called before the first frame update
     void Awake()
     {
         inst = this;
-        filePath = AssetDatabase.GetAssetPath(file);
-        InitializeNodes();
-        InitializePopulation();
-        RunGA();
+        problemFactory = new Dictionary<ProblemType, Func<List<int>, Individual>>
+        {
+            { ProblemType.TSP, chromosome => new TSPIndividual(chromosome) },
+            { ProblemType.ECVRP, chromosome => new ECVRPIndividual(chromosome) },
+        };
     }
 
-    bool readingCoords = false;
-    public void InitializeNodes()
+    public void Init()
     {
-        nodeCoordinates = new List<Vector2>();
-        nodeNumbers = new List<int>();
+        InitializePopulation();
+    }
 
-        StreamReader sr = new StreamReader(filePath);
-        string line = sr.ReadLine();
-        string[] coord;
-
-        while (line != null)
-        {
-            if (line == "EOF")
-                readingCoords = false;
-
-            if (readingCoords)
-            {
-                line = line.Trim();
-                line = Regex.Replace(line, @"\s+", " ");
-                coord = line.Split();
-                nodeCoordinates.Add(new Vector2(float.Parse(coord[1]), float.Parse(coord[2])));
-                nodeNumbers.Add(nodeNumbers.Count);
-            }
-
-            if (line == "NODE_COORD_SECTION")
-                readingCoords = true;
-
-            line = sr.ReadLine();
-        }
+    // Update is called once per frame
+    void Update()
+    {
+        
     }
 
     public void InitializePopulation()
     {
         population = new List<Individual>();
-        for(int i = 0; i < populationSize; i++)
+        for (int i = 0; i < populationSize; i++)
         {
-            System.Random rand = new System.Random();
-            List<int> shuffledList = nodeNumbers.OrderBy(_ => rand.Next()).ToList();
-            population.Add(new Individual(shuffledList));
-        }
-
-        chromosomeSize = population[0].chromosome.Count;
-    }
-
-    //PMX crossover
-    public void Crossover(Individual p0, Individual p1)
-    {
-        int index1 = UnityEngine.Random.Range(0, p1.chromosome.Count);
-        int index2 = UnityEngine.Random.Range(0, p1.chromosome.Count);
-        while (index2 == index1)
-            index2 = UnityEngine.Random.Range(0, p1.chromosome.Count);
-        if(index2 < index1)
-        {
-            int tmp = index2;
-            index2 = index1;
-            index1 = tmp;
-        }
-
-        children.Add(new Individual(GetChildFromParents(p0, p1, index1, index2)));
-        children.Add(new Individual(GetChildFromParents(p1, p0, index1, index2)));
-    }
-
-    public List<int> GetChildFromParents(Individual p0, Individual p1, int index1, int index2) 
-    {
-        List<int> child = new List<int>();
-        for (int i = 0; i < p1.chromosome.Count; i++)
-        {
-            child.Add(-1);
-        }
-
-        for (int i = index1; i <= index2; i++)
-        {
-            child[i] = p0.chromosome[i];
-        }
-
-        for (int i = index1; i <= index2; i++)
-        {
-            if (child.Contains(p1.chromosome[i]))
-                continue;
-
-            int indexOfNinP1 = p1.chromosome.IndexOf(p0.chromosome[i]);
-            while (child[indexOfNinP1] != -1)
+            List<int> chromosome = new List<int>();
+            for (int j = 0; j < chromosomeSize; j++)
             {
-                int symbolAtIndex = child[indexOfNinP1];
-                indexOfNinP1 = p1.chromosome.IndexOf(symbolAtIndex);
+                chromosome.Add(Random.Range(0, 2));
             }
-
-            child[indexOfNinP1] = p1.chromosome[i];
+            population.Add(problemFactory[problemType](chromosome));
         }
-
-        for(int i = 0; i < p1.chromosome.Count; i++)
-        {
-            if (child[i] == -1)
-                child[i] = p1.chromosome[i];
-        }
-
-        return child;
     }
 
     public void Selection()
     {
         parents = new List<Individual>();
-        for (int i = 0; i < population.Count; i++)
-        {
-            int index = GetProportionalIndex();
-            parents.Add(population[index]);
-        }
-    }
 
-    public int GetProportionalIndex()
-    {
         float totalFitness = 0;
-        foreach(Individual individual in population)
+        foreach (Individual individual in population)
         {
             totalFitness += individual.fitness;
         }
 
+        for (int i = 0; i < population.Count; i++)
+        {
+            int index = GetProportionalIndex(totalFitness);
+            parents.Add(population[index]);
+        }
+    }
+
+    public int GetProportionalIndex(float totalFitness)
+    {
         float threshold = 0;
-        float p = UnityEngine.Random.Range(0, totalFitness);
+        float p = Random.Range(0, totalFitness);
         int index = -1;
 
         while (p >= threshold)
@@ -166,55 +96,93 @@ public class GAMgr : MonoBehaviour
         return index;
     }
 
-    List<Individual> parentsAndChildren;
+    
     public void Halve()
     {
         parentsAndChildren = new List<Individual>();
         parentsAndChildren.AddRange(parents);
         parentsAndChildren.AddRange(children);
         parentsAndChildren = parentsAndChildren.OrderBy(o => o.fitness).ToList();
-        for(int i = 0; i < parents.Count; i++)
+        for (int i = 0; i < parents.Count; i++)
         {
             parentsAndChildren.RemoveAt(0);
         }
         population = parentsAndChildren;
     }
 
-    public void RunGA()
+    //two point crossover
+    public void Crossover(Individual p0, Individual p1)
     {
-        Selection();
-
-        children = new List<Individual>();
-        for(int i = 0; i < population.Count; i += 2)
+        int index1 = Random.Range(0, p1.chromosome.Count);
+        int index2 = Random.Range(0, p1.chromosome.Count);
+        while (index2 == index1)
+            index2 = Random.Range(0, p1.chromosome.Count);
+        if (index2 < index1)
         {
-            if(UnityEngine.Random.Range(0f, 1f) < pCrossover)
-                Crossover(parents[i], parents[i + 1]);
+            int tmp = index2;
+            index2 = index1;
+            index1 = tmp;
+        }
+
+        List<int> child0Chromosome = new List<int>();
+        List<int> child1Chromosome = new List<int>();
+
+        for(int i = 0; i < chromosomeSize; i++) 
+        { 
+            if(i >= index1 && i <= index2)
+            {
+                child0Chromosome.Add(p1.chromosome[i]);
+                child1Chromosome.Add(p0.chromosome[i]);
+            }
             else
             {
-                children.Add(parents[i]);
-                children.Add(parents[i + 1]);
+                child0Chromosome.Add(p0.chromosome[i]);
+                child1Chromosome.Add(p1.chromosome[i]);
             }
         }
 
-        foreach(Individual child in children)
-            child.Mutation();
-
-        Halve();
+        children.Add(problemFactory[problemType](child0Chromosome));
+        children.Add(problemFactory[problemType](child1Chromosome));
     }
 
-    int generation = 0;
-    // Update is called once per frame
-    void Update()
+    int generationNumber = 0;
+    public void RunGeneration()
     {
-        if(generation < maxGenerations)
+        if(generationNumber < maxGenerations)
         {
-            RunGA();
-            float averagePathLength = 0f;
-            foreach (Individual individual in population)
-                averagePathLength += individual.pathLength;
-            averagePathLength /= population.Count;
-            Debug.Log("Generation: " + generation + " " + averagePathLength);
-            generation++;
+            Selection();
+
+            children = new List<Individual>();
+            for (int i = 0; i < population.Count; i += 2)
+            {
+                if (Random.Range(0f, 1f) < pCrossover)
+                    Crossover(parents[i], parents[i + 1]);
+                else
+                {
+                    children.Add(parents[i]);
+                    children.Add(parents[i + 1]);
+                }
+            }
+
+            foreach (Individual child in children)
+            {
+                if (Random.Range(0f, 1f) < pMutation)
+                    child.Mutation();
+            }
+
+            Halve();
+
+            generationNumber++;
         }
+        
+    }
+
+    public void GenerateGenerationStats()
+    {
+        float averageFitness = 0f;
+        foreach (Individual individual in population)
+            averageFitness += individual.fitness;
+        averageFitness /= population.Count;
+        Debug.Log("Generation: " + generationNumber + " " + averageFitness);
     }
 }

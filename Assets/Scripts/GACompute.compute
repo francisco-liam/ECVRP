@@ -1,22 +1,143 @@
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
 
+int frameIndex;
 int chromosomeSize;
 int populationSize;
 float pCrossover;
 float pMutation;
 
+uint baseSeed;
 
 RWStructuredBuffer<int> population;
+RWStructuredBuffer<int> children;
+RWStructuredBuffer<int> pathLengths;
+RWStructuredBuffer<float> fitnesses;
+RWStructuredBuffer<int> randTest;
 
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
 RWTexture2D<float4> Result;
 
-[numthreads(8,8,1)]
+uint Hash(uint x)
+{
+    x ^= x >> 16;
+    x *= 0x85ebca6b;
+    x ^= x >> 13;
+    x *= 0xc2b2ae35;
+    x ^= x >> 16;
+    return x;
+}
+
+int RandomIntInRange(uint seed, int minValue, int maxValue)
+{
+    uint hashValue = Hash(seed);
+    int range = maxValue - minValue + 1; // Inclusive range
+    return (hashValue % range) + minValue;
+}
+
+float RandomFloatInRange(uint seed, float minValue, float maxValue)
+{
+    uint hashValue = Hash(seed); // Generate a hash value
+    float normalized = (hashValue & 0x00FFFFFF) / 16777216.0f; // Normalize to [0, 1]
+    return normalized * (maxValue - minValue) + minValue; // Scale to [minValue, maxValue]
+}
+
+bool Contains(RWStructuredBuffer<int> list, int element, int startIndex, int endIndex)
+{
+    for (int i = startIndex; i <= endIndex; i++)
+    {
+        if(list[i] == element)
+            return true;
+    }
+    
+    return false;
+}
+
+int IndexOf(RWStructuredBuffer<int> list, int element, int startIndex, int endIndex)
+{
+    for (int i = startIndex; i <= endIndex; i++)
+    {
+        if (list[i] == element)
+            return i;
+    }
+    
+    return 0;
+}
+
+void GetChildrenFromParents(int p0Index, int p1Index, int cIndex, int index0, int index1)
+{
+    for (int i = cIndex; i < cIndex + chromosomeSize; i++)
+    {
+        children[i] = -1;
+    }
+    
+    
+    for (int j = index0; j <= index1; j++)
+    {
+        children[cIndex + j] = population[p0Index + j];
+    }
+    
+    
+    for (int k = index0; k <= index1; k++)
+    {
+        bool containsGene = Contains(children, population[p1Index + k], cIndex, cIndex + chromosomeSize - 1);
+        if(containsGene)
+            continue;
+
+        int indexOfNinP1 = IndexOf(population, population[p0Index + k], p1Index, p1Index + chromosomeSize - 1); 
+        int adjustedIndex = indexOfNinP1 - p1Index;
+        
+        while (children[cIndex + adjustedIndex] != -1)
+        {
+            int symbolAtIndex = children[cIndex + adjustedIndex];
+            indexOfNinP1 = IndexOf(population, symbolAtIndex, p1Index, p1Index + chromosomeSize - 1);
+            adjustedIndex = indexOfNinP1 - p1Index;
+        }
+        
+        children[cIndex + adjustedIndex] = population[p1Index + k];
+    }
+    
+    for (int i = 0; i < chromosomeSize; i++)
+    {
+        if (children[cIndex + i] == -1)
+            children[cIndex + i] = population[p1Index + i];
+    }
+}
+
+//write contains and index of
+
+void Crossover(int p0Index, int p1Index)
+{
+    int index0 = RandomIntInRange(baseSeed++, 0, chromosomeSize - 1);
+    int index1 = RandomIntInRange(baseSeed++, 0, chromosomeSize - 1);
+    while(index0 == index1)
+        index1 = RandomIntInRange(baseSeed++, 0, chromosomeSize - 1);
+    
+    if (index1 < index0)
+    {
+        int tmp = index0;
+        index0 = index1;
+        index1 = tmp;
+    }
+    
+    randTest[0] = index0;
+    randTest[1] = index1;
+    GetChildrenFromParents(p0Index, p1Index, p0Index, index0, index1);
+    GetChildrenFromParents(p1Index, p0Index, p1Index, index0, index1);
+}
+
+
+
+[numthreads(64,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
     // TODO: insert actual code here!
-
-    Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+    if (id.x % (chromosomeSize*2) == 0)
+    {
+        baseSeed = id.x + id.y * 73856093 + id.z * 19349663 + frameIndex * 2654435761; // Unique seed using thread IDs
+        if(RandomFloatInRange(baseSeed++, 0, 1) < pCrossover)
+            Crossover(id.x, chromosomeSize + id.x);
+    }
 }
+
