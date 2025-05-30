@@ -4,104 +4,6 @@ using System.Collections.Generic;
 using UnityEditor.Search;
 using UnityEngine;
 
-public class ClientSplit
-{
-    public float demand;
-    public float serviceTime;
-    public float d0_x;
-    public float dx_0;
-    public float dnext;
-};
-
-public class Deque
-{
-    private LinkedList<int> deque;
-    private LinkedListNode<int> indexFront;  // Pointer to the front element
-    private LinkedListNode<int> indexBack;   // Pointer to the back element
-
-    public Deque()
-    {
-        deque = new LinkedList<int>();
-    }
-
-    public Deque(int nbElements, int firstNode)
-    {
-        deque = new LinkedList<int>();  // Initialize the linked list
-
-        // Add the first element
-        deque.AddFirst(firstNode);
-
-        // Initialize indexFront and indexBack to the first element
-        indexFront = deque.First;
-        indexBack = deque.First;
-
-        // Add remaining elements (if any) to the deque, initialized with default values (0)
-        for (int i = 1; i < nbElements; i++)
-        {
-            deque.AddLast(0);  // Adding default 0 for the remaining elements
-        }
-    }
-
-    public void PushBack(int value)
-    {
-        deque.AddLast(value);  // Adds to the back of the deque
-    }
-
-    public void PushFront(int value)
-    {
-        deque.AddFirst(value); // Adds to the front of the deque
-    }
-
-    public void PopBack()
-    {
-        if (deque.Count > 0)
-            deque.RemoveLast();  // Removes the last element
-    }
-
-    public void PopFront()
-    {
-        if (deque.Count > 0)
-            deque.RemoveFirst(); // Removes the first element
-    }
-    public int GetFront()
-    {
-        return deque.First.Value; // Returns the front element
-    }
-
-    // Get the next front element (second element in the deque)
-    public int GetNextFront()
-    {
-        if (indexFront?.Next != null)
-        {
-            return indexFront.Next.Value;
-        }
-        else
-        {
-            throw new InvalidOperationException("There is no next front element");
-        }
-    }
-
-    public int GetBack()
-    {
-        return deque.Last.Value; // Returns the back element
-    }
-
-    public void Reset(int firstNode)
-    {
-        deque.Clear();  // Clear the existing deque
-        deque.AddFirst(firstNode);  // Add the new first node
-        indexFront = deque.First;
-        indexBack = deque.First;
-    }
-
-    public int Size()
-    {
-        return deque.Count; // Returns the number of elements in the deque
-    }
-}
-
-
-
 public class Split : MonoBehaviour
 {
     public static Split inst;
@@ -161,7 +63,7 @@ public class Split : MonoBehaviour
         // Initialization of the data structures for the linear split algorithms
         // Direct application of the code located at https://github.com/vidalt/Split-Library
         for (int i = 1; i <= Parameters.inst.nbClients; i++)
-	{
+	    {
             cliSplit[i].demand = Parameters.inst.cli[indiv.chromT[i - 1]].demand;
             cliSplit[i].serviceTime = Parameters.inst.cli[indiv.chromT[i - 1]].serviceDuration;
             cliSplit[i].d0_x = Parameters.inst.timeCost[0][indiv.chromT[i - 1]];

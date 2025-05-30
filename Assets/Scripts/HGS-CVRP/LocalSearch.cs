@@ -1,10 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
+[System.Serializable]
 public class CircleSector
 {
     public int start;
@@ -52,84 +54,7 @@ public class CircleSector
     }
 };
 
-// Structure containing a route
-public class Route
-{
-    public int cour;                           // Route index
-    public int nbCustomers;                    // Number of customers visited in the route
-    public int whenLastModified;               // "When" this route has been last modified
-    public int whenLastTestedSWAPStar;         // "When" the SWAP* moves for this route have been last tested
-    public Node depot;                        // Pointer to the associated depot
-    public float duration;                    // Total time on the route
-    public float load;                        // Total load on the route
-    public float reversalDistance;            // Difference of cost if the route is reversed
-    public float penalty;                     // Current sum of load and duration penalties
-    public float polarAngleBarycenter;        // Polar angle of the barycenter of the route
-    public CircleSector sector;				// Circle sector associated to the set of customers
-};
 
-public class Node
-{
-    public bool isDepot;                       // Tells whether this node represents a depot or not
-    public int cour;                           // Node index
-    public int position;                       // Position in the route
-    public int whenLastTestedRI;               // "When" the RI moves for this node have been last tested
-    public Node next;                     // Next node in the route order
-    public Node prev;                     // Previous node in the route order
-    public Route route;                       // Pointer towards the associated route
-    public float cumulatedLoad;               // Cumulated load on this route until the customer (including itself)
-    public float cumulatedTime;               // Cumulated time on this route until the customer (including itself)
-    public float cumulatedReversalDistance;   // Difference of cost if the segment of route (0...cour) is reversed (useful for 2-opt moves with asymmetric problems)
-    public float deltaRemoval;				// Difference of cost in the current route if the node is removed (used in SWAP*)
-};
-
-// Structure used in SWAP* to remember the three best insertion positions of a customer in a given route
-public class ThreeBestInsert
-{
-    public int whenLastCalculated;
-    public float[] bestCost = new float[3];
-    public Node[] bestLocation = new Node[3];
-
-    public void compareAndAdd(float costInsert, Node placeInsert)
-    {
-        if (costInsert >= bestCost[2]) return;
-        else if (costInsert >= bestCost[1])
-        {
-            bestCost[2] = costInsert; bestLocation[2] = placeInsert;
-        }
-        else if (costInsert >= bestCost[0])
-        {
-            bestCost[2] = bestCost[1]; bestLocation[2] = bestLocation[1];
-            bestCost[1] = costInsert; bestLocation[1] = placeInsert;
-        }
-        else
-        {
-            bestCost[2] = bestCost[1]; bestLocation[2] = bestLocation[1];
-            bestCost[1] = bestCost[0]; bestLocation[1] = bestLocation[0];
-            bestCost[0] = costInsert; bestLocation[0] = placeInsert;
-        }
-    }
-
-    // Resets the structure (no insertion calculated)
-    public void reset()
-    {
-        bestCost[0] = 1e30f; bestLocation[0] = null;
-        bestCost[1] = 1e30f; bestLocation[1] = null;
-        bestCost[2] = 1e30f; bestLocation[2] = null;
-    }
-
-    public ThreeBestInsert() { reset(); }
-};
-
-// Structured used to keep track of the best SWAP* move
-public class SwapStarElement
-{
-    public float moveCost = 1e30f;
-    public Node U = null;
-    public Node bestPositionU = null;
-    public Node V = null;
-    public Node bestPositionV = null;
-};
 
 
 public class LocalSearch : MonoBehaviour
@@ -175,7 +100,7 @@ public class LocalSearch : MonoBehaviour
         return Mathf.Max(0, myLoad - Parameters.inst.vehicleCapacity) * penaltyCapacityLS;
     }
 
-    void run(HGSCVRPIndividual indiv, float penaltyCapacityLS, float penaltyDurationLS)
+    public void run(HGSCVRPIndividual indiv, float penaltyCapacityLS, float penaltyDurationLS)
     {
         this.penaltyCapacityLS = penaltyCapacityLS;
         this.penaltyDurationLS = penaltyDurationLS;
@@ -261,7 +186,7 @@ public class LocalSearch : MonoBehaviour
                 }
             }
 
-            if (Parameters.inst.ap.useSwapStar == 1 && Parameters.inst.areCoordinatesProvided)
+            if (Parameters.inst.ap.useSwapStar == true && Parameters.inst.areCoordinatesProvided)
 		    {
                 /* (SWAP*) MOVES LIMITED TO ROUTE PAIRS WHOSE CIRCLE SECTORS OVERLAP */
                 for (int rU = 0; rU < Parameters.inst.nbVehicles; rU++)
@@ -803,14 +728,14 @@ public class LocalSearch : MonoBehaviour
             U.deltaRemoval = Parameters.inst.timeCost[U.prev.cour][U.next.cour] - Parameters.inst.timeCost[U.prev.cour][U.cour] - Parameters.inst.timeCost[U.cour][U.next.cour];
             if (R2.whenLastModified > bestInsertClient[R2.cour][U.cour].whenLastCalculated)
             {
-                bestInsertClient[R2.cour][U.cour].reset();
+                bestInsertClient[R2.cour][U.cour].Reset();
                 bestInsertClient[R2.cour][U.cour].whenLastCalculated = nbMoves;
                 bestInsertClient[R2.cour][U.cour].bestCost[0] = Parameters.inst.timeCost[0][U.cour] + Parameters.inst.timeCost[U.cour][R2.depot.next.cour] - Parameters.inst.timeCost[0][R2.depot.next.cour];
                 bestInsertClient[R2.cour][U.cour].bestLocation[0] = R2.depot;
                 for (Node V = R2.depot.next; !V.isDepot; V = V.next)
                 {
                     float deltaCost = Parameters.inst.timeCost[V.cour][U.cour] + Parameters.inst.timeCost[U.cour][V.next.cour] - Parameters.inst.timeCost[V.cour][V.next.cour];
-                    bestInsertClient[R2.cour][U.cour].compareAndAdd(deltaCost, V);
+                    bestInsertClient[R2.cour][U.cour].CompareAndAdd(deltaCost, V);
                 }
             }
         }
@@ -948,4 +873,67 @@ public class LocalSearch : MonoBehaviour
         for (int i = 1; i <= Parameters.inst.nbClients; i++) // Initializing memory structures
 		    clients[i].whenLastTestedRI = -1;
     }
+
+    void exportIndividual(HGSCVRPIndividual indiv)
+    {
+        var routePolarAngles = new List<(double angle, int index)>();
+        for (int r = 0; r < Parameters.inst.nbVehicles; r++)
+		routePolarAngles.Add(new ValueTuple<double, int>(routes[r].polarAngleBarycenter, r));
+        routePolarAngles.Sort((a, b) => a.angle.CompareTo(b.angle)); ; // empty routes have a polar angle of 1.e30, and therefore will always appear at the end
+
+        int pos = 0;
+        for (int r = 0; r < Parameters.inst.nbVehicles; r++)
+	{
+            indiv.chromR[r].Clear();
+            Node node = depots[routePolarAngles[r].index].next;
+            while (!node.isDepot)
+            {
+                indiv.chromT[pos] = node.cour;
+                indiv.chromR[r].Add(node.cour);
+                node = node.next;
+                pos++;
+            }
+        }
+
+        indiv.evaluateCompleteCost();
+    }
+    public LocalSearch()
+    {
+        int nbClients = Parameters.inst.nbClients;
+        int nbVehicles = Parameters.inst.nbVehicles;
+
+        clients = Enumerable.Repeat(new Node(), nbClients + 1).ToList();
+        routes = Enumerable.Repeat(new Route(), nbVehicles).ToList();
+        depots = Enumerable.Repeat(new Node(), nbVehicles).ToList();
+        depotsEnd = Enumerable.Repeat(new Node(), nbVehicles).ToList();
+
+        // Nested list for bestInsertClient
+        bestInsertClient = new List<List<ThreeBestInsert>>();
+        for (int i = 0; i < nbVehicles; i++)
+        {
+            var innerList = Enumerable.Repeat(new ThreeBestInsert(), nbClients + 1).ToList();
+            bestInsertClient.Add(innerList);
+        }
+
+
+        for (int i = 0; i <= Parameters.inst.nbClients; i++) 
+	    { 
+		    clients[i].cour = i; 
+		    clients[i].isDepot = false; 
+	    }
+        for (int i = 0; i < Parameters.inst.nbVehicles; i++)
+	    {
+            routes[i].cour = i;
+            routes[i].depot = depots[i];
+            depots[i].cour = 0;
+            depots[i].isDepot = true;
+            depots[i].route = routes[i];
+            depotsEnd[i].cour = 0;
+            depotsEnd[i].isDepot = true;
+            depotsEnd[i].route = routes[i];
+        }
+        for (int i = 1; i <= Parameters.inst.nbClients ; i++) orderNodes.Add(i);
+        for (int r = 0; r < Parameters.inst.nbVehicles ; r++) orderRoutes.Add(r);
+    }
+
 }

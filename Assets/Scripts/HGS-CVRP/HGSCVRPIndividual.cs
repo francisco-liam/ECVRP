@@ -5,15 +5,6 @@ using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
 using Random = UnityEngine.Random;
-public class EvalIndiv
-{
-    public float penalizedCost;       // Penalized cost of the solution
-    public int nbRoutes;               // Number of routes
-    public float distance;            // Total distance
-    public float capacityExcess;      // Sum of excess load in all routes
-    public float durationExcess;      // Sum of excess duration in all routes
-    public bool isFeasible;		    // Feasibility status of the individual
-};
 
 public class SortedMultiSet<T> : IEnumerable<T>
 {
