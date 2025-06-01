@@ -154,6 +154,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   feasibleSubpop: []
   infeasibleSubpop: []
+  listFeasibilityLoad: 
+  listFeasibilityDuration: 
 --- !u!4 &323022841
 Transform:
   m_ObjectHideFlags: 0
@@ -379,6 +381,11 @@ MonoBehaviour:
   depots: []
   depotsEnd: []
   routes: []
+  movesPerformed: 
+  moveFunction: 0
+  uIndex: 0
+  vIndex: 0
+  prev: 0
 --- !u!4 &1100029508
 Transform:
   m_ObjectHideFlags: 0
@@ -476,7 +483,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ap:
-    nbGranular: 20
+    nbGranular: 5
     mu: 25
     lambda: 40
     nbElite: 4
@@ -488,8 +495,8 @@ MonoBehaviour:
     seed: 0
     nbIter: 20000
     nbIterTraces: 500
-    timeLimit: 0
-    useSwapStar: 0
+    timeLimit: 100
+    useSwapStar: 1
   penaltyCapacity: 0
   penaltyDuration: 0
   startTime: 0

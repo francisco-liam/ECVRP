@@ -111,6 +111,7 @@ public class Individual
             chromT[j] = temp;
         }
         eval.penalizedCost = 1e30f;
+        EvaluateCompleteCost();
     }
 
     public Individual(Individual other)

@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using Unity.VisualScripting;
 using UnityEditor.Search;
 using UnityEngine;
 
@@ -149,7 +148,7 @@ public class SplitMgr : MonoBehaviour
         if (!SimpleSplit(indiv))
         {
             //Debug.Log("running LF");
-            Debug.Log(SplitLF(indiv));
+            SplitLF(indiv);
         }
 
         indiv.EvaluateCompleteCost();

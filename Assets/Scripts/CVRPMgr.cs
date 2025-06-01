@@ -52,6 +52,7 @@ public class CVRPNode
     public int polarAngle;
     public float demand;
     public bool isDepot;
+    public float serviceDuration = 0;
 }
 
 [System.Serializable]

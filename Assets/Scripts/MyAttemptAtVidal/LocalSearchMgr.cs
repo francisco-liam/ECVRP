@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
 using Random = UnityEngine.Random;
 
 [System.Serializable]
@@ -96,8 +97,8 @@ public class LocalSearchMgr : MonoBehaviour
 
     bool searchCompleted;
     int nbMoves;				// Total number of moves (RI and SWAP*) applied during the local search. Attention: this is not only a simple counter, it is also used to avoid repeating move evaluations
-    int[] orderNodes;               // Randomized order for checking the nodes in the RI local search
-    int[] orderRoutes;			// Randomized order for checking the routes in the SWAP* local search
+    List<int> orderNodes;               // Randomized order for checking the nodes in the RI local search
+    List<int> orderRoutes;			// Randomized order for checking the routes in the SWAP* local search
     public SortedSet<int> emptyRoutes;  // indices of all empty routes
     int loopID;									// Current loop index
 
@@ -106,6 +107,8 @@ public class LocalSearchMgr : MonoBehaviour
     public Node[] depotsEnd;                // Duplicate of the depots to mark the end of the routes
     public Route[] routes;				// Elements representing routes
     public ThreeBestInsert[,] bestInsertClient; // (SWAP*) For each route and node, storing the cheapest insertion cost 
+
+    public List<int> movesPerformed = new List<int>();
 
     /* TEMPORARY VARIABLES USED IN THE LOCAL SEARCH LOOPS */
     // nodeUPrev . nodeU . nodeX . nodeXNext
@@ -151,14 +154,14 @@ public class LocalSearchMgr : MonoBehaviour
         LoadIndividual(indiv);
 
         // Shuffling the order of the nodes explored by the LS to allow for more diversity in the search
-        for (int i = orderNodes.Length - 1; i > 0; i--)
+        for (int i = orderNodes.Count - 1; i > 0; i--)
         {
             int j = Random.Range(0, i + 1);
             int temp = orderNodes[i];
             orderNodes[i] = orderNodes[j];
             orderNodes[j] = temp;
         }
-        for (int i = orderRoutes.Length - 1; i > 0; i--)
+        for (int i = orderRoutes.Count - 1; i > 0; i--)
         {
             int j = Random.Range(0, i + 1);
             int temp = orderRoutes[i];
@@ -180,8 +183,8 @@ public class LocalSearchMgr : MonoBehaviour
         }
 
         searchCompleted = false;
-        for (loopID = 0; !searchCompleted; loopID++)
-        {
+        for (loopID = 0; !searchCompleted && loopID < 5; loopID++)
+        {            
             if (loopID > 1) // Allows at least two loops since some moves involving empty routes are not checked at the first loop
                 searchCompleted = true;
 
@@ -194,6 +197,7 @@ public class LocalSearchMgr : MonoBehaviour
                 for (int posV = 0; posV < (int)CVRPMgr.inst.correlatedVertices[nodeU.cour].Count; posV++)
                 {
                     nodeV = clients[CVRPMgr.inst.correlatedVertices[nodeU.cour][posV]];
+
                     if (loopID == 0 || Mathf.Max(nodeU.route.whenLastModified, nodeV.route.whenLastModified) > lastTestRINodeU) // only evaluate moves involving routes that have been modified since last move evaluations for nodeU
                     {
                         // Randomizing the order of the neighborhoods within this loop does not matter much as we are already randomizing the order of the node pairs (and it's not very common to find improving moves of different types for the same node pair)
@@ -205,9 +209,9 @@ public class LocalSearchMgr : MonoBehaviour
                         if (nodeUIndex <= nodeVIndex && Move4()) continue; // SWAP
                         if (Move5()) continue; // SWAP
                         if (nodeUIndex <= nodeVIndex && Move6()) continue; // SWAP
-                        //if (intraRouteMove && Move7()) continue; // 2-OPT
-                        //if (!intraRouteMove && Move8()) continue; // 2-OPT*
-                        //if (!intraRouteMove && Move9()) continue; // 2-OPT*
+                        if (intraRouteMove && Move7()) continue; // 2-OPT
+                        if (!intraRouteMove && Move8()) continue; // 2-OPT*
+                        if (!intraRouteMove && Move9()) continue; // 2-OPT*
 
                         // Trying moves that insert nodeU directly after the depot
                         if (nodeV.prev.isDepot)
@@ -217,8 +221,8 @@ public class LocalSearchMgr : MonoBehaviour
                             if (Move1()) continue; // RELOCATE
                             if (Move2()) continue; // RELOCATE
                             if (Move3()) continue; // RELOCATE
-                            //if (!intraRouteMove && Move8()) continue; // 2-OPT*
-                            //if (!intraRouteMove && Move9()) continue; // 2-OPT*
+                            if (!intraRouteMove && Move8()) continue; // 2-OPT*
+                            if (!intraRouteMove && Move9()) continue; // 2-OPT*
                         }
                     }
                 }
@@ -232,7 +236,7 @@ public class LocalSearchMgr : MonoBehaviour
                     if (Move1()) continue; // RELOCATE
                     if (Move2()) continue; // RELOCATE
                     if (Move3()) continue; // RELOCATE
-                    //if (Move9()) continue; // 2-OPT*
+                    if (Move9()) continue; // 2-OPT*
                 }
             }
 
@@ -302,13 +306,8 @@ public class LocalSearchMgr : MonoBehaviour
     //(M1) If u is a customer visit, remove u from r(u) and place it after v in r(v);
     bool Move1()
     {
-        float costSuppU = matrix[nodeUPrevIndex, nodeXIndex]
-            - matrix[nodeUPrevIndex, nodeUIndex]
-            - matrix[nodeUIndex, nodeXIndex];
-
-        float costSuppV = matrix[nodeVIndex, nodeUIndex]
-            + matrix[nodeUIndex, nodeYIndex]
-            - matrix[nodeVIndex, nodeYIndex];
+        float costSuppU = matrix[nodeUPrevIndex, nodeXIndex] - matrix[nodeUPrevIndex, nodeUIndex] - matrix[nodeUIndex, nodeXIndex];
+        float costSuppV = matrix[nodeVIndex, nodeUIndex] + matrix[nodeUIndex, nodeYIndex] - matrix[nodeVIndex, nodeYIndex];
 
         if (!intraRouteMove) //if r(u) != r(v)
         {
@@ -452,7 +451,8 @@ public class LocalSearchMgr : MonoBehaviour
 
         if (costSuppU + costSuppV > -float.Epsilon)
             return false;
-        if (nodeUIndex == nodeVPrevIndex || nodeUIndex == nodeYIndex)
+        if (nodeUIndex == nodeVPrevIndex || nodeUIndex == nodeYIndex ||
+            nodeU.isDepot || nodeV.isDepot)
             return false;
 
         SwapNode(nodeU, nodeV);
@@ -494,7 +494,8 @@ public class LocalSearchMgr : MonoBehaviour
 
         if (costSuppU + costSuppV > -float.Epsilon)
             return false;
-        if (nodeU == nodeV.prev || nodeX == nodeV.prev || nodeU == nodeY || nodeX.isDepot)
+        if (nodeU == nodeV.prev || nodeX == nodeV.prev || nodeU == nodeY || 
+            nodeX.isDepot || nodeU.isDepot || nodeY.isDepot)
             return false;
 
         SwapNode(nodeU, nodeV);
@@ -535,7 +536,8 @@ public class LocalSearchMgr : MonoBehaviour
         }
 
         if (costSuppU + costSuppV > -float.Epsilon) return false;
-        if (nodeX.isDepot || nodeY.isDepot || nodeY == nodeU.prev || nodeU == nodeY || nodeX == nodeV || nodeV == nodeX.next) return false;
+        if (nodeX.isDepot || nodeY.isDepot || nodeU.isDepot || nodeV.isDepot
+            || nodeY == nodeU.prev || nodeU == nodeY || nodeX == nodeV || nodeV == nodeX.next) return false;
 
         SwapNode(nodeU, nodeV);
         SwapNode(nodeX, nodeY);
@@ -551,7 +553,7 @@ public class LocalSearchMgr : MonoBehaviour
     bool Move7()
     {
         if (nodeU.position > nodeV.position) return false;
-        double cost = matrix[nodeUIndex, nodeVIndex]
+        float cost = matrix[nodeUIndex, nodeVIndex]
             + matrix[nodeXIndex, nodeYIndex]
             - matrix[nodeUIndex, nodeXIndex]
             - matrix[nodeVIndex, nodeYIndex]
@@ -565,13 +567,19 @@ public class LocalSearchMgr : MonoBehaviour
         nodeX.prev = nodeNum;
         nodeX.next = nodeY;
 
-        while (nodeNum != nodeV)
+        int counter = 0;
+
+        while (nodeNum != nodeV && counter < 10000)
         {
             Node temp = nodeNum.next;
             nodeNum.next = nodeNum.prev;
             nodeNum.prev = temp;
             nodeNum = temp;
+            counter++;
         }
+
+        if (counter == 10000)
+            Debug.Log("Check 1");
 
         nodeV.next = nodeV.prev;
         nodeV.prev = nodeU;
@@ -588,6 +596,11 @@ public class LocalSearchMgr : MonoBehaviour
     //(M8) If r(u) != r(v), replace (u, x) and (v, y) by (u, v) and (x, y)
     bool Move8()
     {
+        if (nodeX.isDepot && nodeV.isDepot)
+        {
+            return false;
+        }
+
         float cost = matrix[nodeUIndex, nodeVIndex] + matrix[nodeXIndex, nodeYIndex]
             - matrix[nodeUIndex, nodeXIndex] - matrix[nodeVIndex, nodeYIndex]
             + nodeV.cumulatedReversalDistance + routeU.reversalDistance
@@ -614,23 +627,31 @@ public class LocalSearchMgr : MonoBehaviour
         Node xx = nodeX;
         Node vv = nodeV;
 
-        while (!xx.isDepot)
+        int counter = 0;
+        while (!xx.isDepot && counter < 10000)
         {
             temp = xx.next;
             xx.next = xx.prev;
             xx.prev = temp;
             xx.route = routeV;
             xx = temp;
+            counter++;
         }
+        if (counter == 10000)
+            Debug.Log("Check 2");
 
-        while (!vv.isDepot)
+        counter = 0;
+        while (!vv.isDepot && counter < 10000)
         {
             temp = vv.prev;
             vv.prev = vv.next;
             vv.next = temp;
             vv.route = routeU;
             vv = temp;
+            counter++;
         }
+        if (counter == 10000)
+            Debug.Log("Check 3");
 
         nodeU.next = nodeV;
         nodeV.prev = nodeU;
@@ -693,18 +714,27 @@ public class LocalSearchMgr : MonoBehaviour
         Node depotUpred = depotUFin.prev;
 
         Node count = nodeY;
-        while (!count.isDepot)
+
+        int counter = 0;
+        while (!count.isDepot && counter < 10000)
         {
             count.route = routeU;
             count = count.next;
+            counter++;
         }
+        if (counter == 10000)
+            Debug.Log("Check 4");
 
         count = nodeX;
-        while (!count.isDepot)
+        counter = 0;
+        while (!count.isDepot && counter < 10000)
         {
             count.route = routeV;
             count = count.next;
+            counter++;
         }
+        if (counter == 10000)
+            Debug.Log("Check 5");
 
         nodeU.next = nodeY;
         nodeY.prev = nodeU;
@@ -928,63 +958,60 @@ public class LocalSearchMgr : MonoBehaviour
 
     void UpdateRouteData(Route myRoute)
     {
-        int myPlace = 0;
-        float myLoad = 0;
-        float myTime = 0;
+        int myplace = 0;
+        float myload = 0;
+        float mytime = 0;
         float myReversalDistance = 0;
         float cumulatedX = 0;
         float cumulatedY = 0;
 
-        Node myNode = myRoute.depot;
-        myNode.position = 0;
-        myNode.cumulatedLoad = 0;
-        myNode.cumulatedTime = 0;
-        myNode.cumulatedReversalDistance = 0;
+        Node mynode = myRoute.depot;
+        mynode.position = 0;
+        mynode.cumulatedLoad = 0;
+        mynode.cumulatedTime = 0;
+        mynode.cumulatedReversalDistance = 0;
 
         bool firstIt = true;
-
-        while (!myNode.isDepot || firstIt)
+        int counter = 0;
+        while ((!mynode.isDepot || firstIt) && counter++ < 10000)
         {
-            myNode = myNode.next;
-            myPlace++;
-            myNode.position = myPlace;
-            myLoad += CVRPMgr.inst.problem.nodes[myNode.cour].demand;
-            myTime += matrix[myNode.prev.cour, myNode.cour]; // + CVRPMgr.inst.problem.nodes[mynode.cour].serviceDuration;
-            myReversalDistance += matrix[myNode.cour, myNode.prev.cour]
-                - matrix[myNode.prev.cour, myNode.cour];
-            myNode.cumulatedLoad = myLoad;
-            myNode.cumulatedTime = myTime;
-            myNode.cumulatedReversalDistance = myReversalDistance;
-            if (!myNode.isDepot)
+            mynode = mynode.next;
+            myplace++;
+            mynode.position = myplace;
+            myload += CVRPMgr.inst.problem.nodes[mynode.cour].demand;
+            mytime += matrix[mynode.prev.cour, mynode.cour] + CVRPMgr.inst.problem.nodes[mynode.cour].serviceDuration;
+            myReversalDistance += matrix[mynode.cour, mynode.prev.cour] - matrix[mynode.prev.cour, mynode.cour];
+            mynode.cumulatedLoad = myload;
+            mynode.cumulatedTime = mytime;
+            mynode.cumulatedReversalDistance = myReversalDistance;
+            if (!mynode.isDepot)
             {
-                cumulatedX += CVRPMgr.inst.problem.nodes[myNode.cour].coordinate.x;
-                cumulatedY += CVRPMgr.inst.problem.nodes[myNode.cour].coordinate.y;
-                if (firstIt)
-                    myRoute.sector.initialize(CVRPMgr.inst.problem.nodes[myNode.cour].polarAngle);
-                else
-                    myRoute.sector.extend(CVRPMgr.inst.problem.nodes[myNode.cour].polarAngle);
+                cumulatedX += CVRPMgr.inst.problem.nodes[mynode.cour].coordinate.x;
+                cumulatedY += CVRPMgr.inst.problem.nodes[mynode.cour].coordinate.y;
+                if (firstIt) myRoute.sector.initialize(CVRPMgr.inst.problem.nodes[mynode.cour].polarAngle);
+                else myRoute.sector.extend(CVRPMgr.inst.problem.nodes[mynode.cour].polarAngle);
             }
             firstIt = false;
         }
+        if (counter == 10000)
+            Debug.Log("Check 6");
 
-        myRoute.duration = myTime;
-        myRoute.load = myLoad;
-        myRoute.penalty = PenaltyExcessDuration(myTime) + PenaltyExcessLoad(myLoad);
-        myRoute.nbCustomers = myPlace - 1;
+        myRoute.duration = mytime;
+        myRoute.load = myload;
+        myRoute.penalty = PenaltyExcessDuration(mytime) + PenaltyExcessLoad(myload);
+        myRoute.nbCustomers = myplace - 1;
         myRoute.reversalDistance = myReversalDistance;
         // Remember "when" this route has been last modified (will be used to filter unnecessary move evaluations)
         myRoute.whenLastModified = nbMoves;
 
         if (myRoute.nbCustomers == 0)
         {
-            myRoute.polarAngleBarycenter = 0;
+            myRoute.polarAngleBarycenter = 1e30f;
             emptyRoutes.Add(myRoute.cour);
         }
         else
         {
-            myRoute.polarAngleBarycenter = Mathf.Atan2(
-                cumulatedY / myRoute.nbCustomers - CVRPMgr.inst.problem.nodes[0].coordinate.y,
-                cumulatedX / myRoute.nbCustomers - CVRPMgr.inst.problem.nodes[0].coordinate.x);
+            myRoute.polarAngleBarycenter = Mathf.Atan2(cumulatedY / (float)myRoute.nbCustomers - CVRPMgr.inst.problem.nodes[0].coordinate.y, cumulatedX / (float)myRoute.nbCustomers - CVRPMgr.inst.problem.nodes[0].coordinate.x);
             emptyRoutes.Remove(myRoute.cour);
         }
     }
@@ -1048,13 +1075,17 @@ public class LocalSearchMgr : MonoBehaviour
         {
             indiv.chromR[r].Clear();
             Node node = depots[routePolarAngles[r].Item2].next;
-            while (!node.isDepot)
+            int counter = 0;
+            while (!node.isDepot && counter < 10000)
             {
                 //chromT[pos] = node.cour;
                 indiv.chromR[r].Add(node.cour);
                 node = node.next;
                 pos++;
+                counter++;
             }
+            if (counter == 10000)
+                Debug.Log("Check 7");
         }
 
         indiv.EvaluateCompleteCost();
@@ -1065,13 +1096,14 @@ public class LocalSearchMgr : MonoBehaviour
         matrix = CVRPMgr.inst.problem.adjacencyMatrix;
 
         penaltyCapacityLS = CVRPMgr.inst.penaltyCapacity;
+        penaltyDurationLS = CVRPMgr.inst.penaltyDuration;
         clients = new Node[CVRPMgr.inst.problem.customers + 1];
         routes = new Route[CVRPMgr.inst.problem.vehicles];
         depots = new Node[CVRPMgr.inst.problem.vehicles];
         depotsEnd = new Node[CVRPMgr.inst.problem.vehicles];
         bestInsertClient = new ThreeBestInsert[CVRPMgr.inst.problem.vehicles, CVRPMgr.inst.problem.customers + 1];
-        orderNodes = new int[CVRPMgr.inst.problem.customers];
-        orderRoutes = new int[CVRPMgr.inst.problem.vehicles];
+        orderNodes = new List<int>();
+        orderRoutes = new List<int>();
         emptyRoutes = new SortedSet<int>();
 
         for (int i = 0; i < CVRPMgr.inst.problem.vehicles; i++)
@@ -1105,9 +1137,9 @@ public class LocalSearchMgr : MonoBehaviour
             depotsEnd[i].route = routes[i];
         }
         for (int i = 1; i <= CVRPMgr.inst.problem.customers; i++)
-            orderNodes[i - 1] = i;
+            orderNodes.Add(i);
         for (int r = 0; r < CVRPMgr.inst.problem.vehicles; r++)
-            orderRoutes[r] = r;
+            orderRoutes.Add(r);
     }
 
     List<List<int>> testRoutes;
@@ -1153,20 +1185,149 @@ public class LocalSearchMgr : MonoBehaviour
         List<int> route4 = new List<int> { 9, 7, 3, 1, 6, 8 };
         */
 
+        /*
         List<int> route1 = new List<int> { 16, 17, 4, 5, 7, 3 };
         List<int> route2 = new List<int> { 15, 11, 10, 13, 20 };
         List<int> route3 = new List<int> { 2, 9, 21, 19, 18, 6, 8 };
         List<int> route4 = new List<int> { 14, 1, 12 };
+        */
 
         Individual indiv = new Individual();
-        indiv.chromR = new List<List<int>> { route1, route2, route3, route4 };
+        SplitMgr.inst.GeneralSplit(indiv, CVRPMgr.inst.problem.vehicles);
+        /*
+        List<List<int>> groupedData = new List<List<int>>()
+        {
+            new List<int> { 15, 21, 20, 17 },
+            new List<int> { 14, 18, 12, 8, 4, 10, 6 , 9, 7},
+            new List<int> { 5, 2 ,3, 19 },
+            new List<int> { 1, 13, 11, 16 }
+        };
+        */
+
+        //indiv.chromR = groupedData;
 
         LoadIndividual(indiv);
+        ExportIndividual(indiv);
 
-        //Run(indiv, CVRPMgr.inst.penaltyCapacity, CVRPMgr.inst.penaltyDuration);
+        Debug.Log(indiv.eval.penalizedCost);
+        Debug.Log(indiv.eval.distance);
 
         foreach (List<int> route in indiv.chromR)
             Debug.Log(BasicsChecking.PrintList(route));
-        //Debug.Log(BasicsChecking.PrintList(routePolarAngles));
+
+        Run(indiv, CVRPMgr.inst.penaltyCapacity, CVRPMgr.inst.penaltyDuration);
     }
+
+    void CheckRoutes()
+    {
+        /*
+        HashSet<int> visited = new HashSet<int>();
+        int routeNum = 0;
+        foreach(Route route in routes)
+        {
+            routeNum++;
+            Node node = route.depot;
+            int counter = 0;
+            while (node != null && counter++ < 10000)
+            {
+                node = node.next;
+                if (node == null)
+                {
+                    Debug.LogError("Null next node found in route!");
+                    return;
+                }
+                if (node.isDepot && counter > 1)
+                {
+                    Debug.Log($"Route {routeNum} correctly ends with depot.");
+                    break;
+                }
+                if (visited.Contains(node.cour))
+                {
+                    Debug.LogError($"Duplicate found: Node {node.cour}");
+                }
+                visited.Add(node.cour);
+            }
+            
+        }
+
+        if(visited.Count != CVRPMgr.inst.problem.vehicles)
+        {
+            Debug.LogError($"Missing vertices, has count {visited.Count}");
+        }
+
+        Debug.Log("Route does not return to depot or has a cycle or has a duplicate.");
+        */
+    }
+
+    string PrintCost()
+    {
+        float cost = 0;
+        foreach (Route route in routes)
+            cost += route.duration;
+        string costPrint = ($"Total Cost: {cost}");
+        return costPrint;
+    }
+
+    string PrintStats()
+    {
+        return $"Node U: {nodeUIndex}, Node V: {nodeVIndex}";
+    }
+
+    public int moveFunction;
+    public int uIndex;
+    public int vIndex;
+    public bool prev;
+
+    void DebugChecks()
+    {
+        nodeU = clients[uIndex];
+        nodeV = clients[vIndex];
+        if (prev)
+            nodeV = nodeV.prev;
+
+        SetLocalVariablesRouteU();
+        SetLocalVariablesRouteV();
+
+        if (moveFunction == 1)
+        {
+            Move1();
+        }
+        else if (moveFunction == 2)
+        {
+            Move2();
+        }
+        else if (moveFunction == 3)
+        {
+            Move3();
+        }
+        else if (moveFunction == 4)
+        {
+            Move4();
+        }
+        else if (moveFunction == 5)
+        {
+            Move5();
+        }
+        else if (moveFunction == 6)
+        {
+            Move6();
+        }
+        else if (moveFunction == 7)
+        {
+            Move7();
+        }
+        else if (moveFunction == 8)
+        {
+            Move8();
+        }
+        else if (moveFunction == 9)
+        {
+            Move9();
+        }
+        else
+        {
+            throw new ArgumentException("Invalid move type: " + moveFunction);
+        }
+    }
+
 }
