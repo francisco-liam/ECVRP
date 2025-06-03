@@ -6,39 +6,75 @@ using static UnityEngine.Networking.UnityWebRequest;
 
 public class GeneticMgr : MonoBehaviour
 {
+    public static GeneticMgr inst;
+    private void Awake()
+    {
+        inst = this;
+    }
+
     // Start is called before the first frame update
     void Start()
     {
         
     }
 
-    int nbIter = 0;
-    int nbIterNonProd = 1;
+    public int nbIter = 0;
+    public int nbIterNonProd = 1;
     public void Init()
     {
         PopulationMgr.inst.GeneratePopulation();
+        Debug.Log("----- STARTING GENETIC ALGORITHM");
     }
 
+    bool running;
     // Update is called once per frame
     void Update()
     {
-        if(nbIterNonProd <= CVRPMgr.inst.ap.nbIter && (CVRPMgr.inst.ap.timeLimit == 0 || Time.realtimeSinceStartup - CVRPMgr.inst.startTime < CVRPMgr.inst.ap.timeLimit))
-        {
-            nbIter++;
+        //if (Input.GetKeyDown(KeyCode.Alpha1))
+        //{
+            if (nbIterNonProd <= CVRPMgr.inst.ap.nbIter && (CVRPMgr.inst.ap.timeLimit == 0 || Time.realtimeSinceStartup - CVRPMgr.inst.startTime < CVRPMgr.inst.ap.timeLimit))
+            {
+                running = true;
+                nbIter++;
 
-            /* SELECTION AND CROSSOVER */
-            Individual offspring = CrossoverOX(PopulationMgr.inst.GetBinaryTournament(), PopulationMgr.inst.GetBinaryTournament());
+                /* SELECTION AND CROSSOVER */
+                Individual offspring = CrossoverOX(PopulationMgr.inst.GetBinaryTournament(), PopulationMgr.inst.GetBinaryTournament());
 
-            /* LOCAL SEARCH */
-            LocalSearchMgr.inst.Run(offspring, CVRPMgr.inst.penaltyCapacity, CVRPMgr.inst.penaltyDuration);
-            bool isNewBest = PopulationMgr.inst.AddIndividual(offspring, true);
-            if (!offspring.eval.isFeasible && Random.Range(0, 2) % 2 == 0) // Repair half of the solutions in case of infeasibility
-		{
-                LocalSearchMgr.inst.Run(offspring, CVRPMgr.inst.penaltyCapacity*10, CVRPMgr.inst.penaltyDuration*10); ;
-                if (offspring.eval.isFeasible) isNewBest = (PopulationMgr.inst.AddIndividual(offspring, false) || isNewBest);
+                /* LOCAL SEARCH */
+                LocalSearchMgr.inst.Run(offspring, CVRPMgr.inst.penaltyCapacity, CVRPMgr.inst.penaltyDuration);
+                bool isNewBest = PopulationMgr.inst.AddIndividual(offspring, true);
+                if (!offspring.eval.isFeasible && Random.Range(0, 2) % 2 == 0) // Repair half of the solutions in case of infeasibility
+                {
+                    LocalSearchMgr.inst.Run(offspring, CVRPMgr.inst.penaltyCapacity * 10, CVRPMgr.inst.penaltyDuration * 10); ;
+                    if (offspring.eval.isFeasible) isNewBest = (PopulationMgr.inst.AddIndividual(offspring, false) || isNewBest);
+                }
+
+                /* TRACKING THE NUMBER OF ITERATIONS SINCE LAST SOLUTION IMPROVEMENT */
+                if (isNewBest) nbIterNonProd = 1;
+                else nbIterNonProd++;
+
+                /* DIVERSIFICATION, PENALTY MANAGEMENT AND TRACES */
+                if (nbIter % CVRPMgr.inst.ap.nbIterPenaltyManagement == 0) PopulationMgr.inst.ManagePenalties();
+                if (nbIter % CVRPMgr.inst.ap.nbIterTraces == 0) PopulationMgr.inst.PrintState(nbIter, nbIterNonProd);
+
+                /* FOR TESTS INVOLVING SUCCESSIVE RUNS UNTIL A TIME LIMIT: WE RESET THE ALGORITHM/POPULATION EACH TIME maxIterNonProd IS ATTAINED
+                if (params.ap.timeLimit != 0 && nbIterNonProd == params.ap.nbIter)
+                {
+                    population.restart();
+                    nbIterNonProd = 1;
+                }
+                */
+
             }
-
-        }
+            else if (running)
+            {
+                running = false;
+                Debug.Log(string.Format(
+                    "----- GENETIC ALGORITHM FINISHED AFTER {0} ITERATIONS. TIME SPENT: {1:F2}",
+                    nbIter,
+                    Time.realtimeSinceStartup - CVRPMgr.inst.startTime));
+            }
+        //}
     }
 
     Individual CrossoverOX(Individual parent1, Individual parent2)
@@ -58,7 +94,7 @@ public class GeneticMgr : MonoBehaviour
         // Copy from start to end
         int j = start;
         while (j % CVRPMgr.inst.problem.customers != (end + 1) % CVRPMgr.inst.problem.customers)
-	{
+	    {
             result.chromT[j % CVRPMgr.inst.problem.customers] = parent1.chromT[j % CVRPMgr.inst.problem.customers];
             freqClient[result.chromT[j % CVRPMgr.inst.problem.customers]] = true;
             j++;

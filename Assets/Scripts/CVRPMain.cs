@@ -10,6 +10,8 @@ public class CVRPMain : MonoBehaviour
         CVRPMgr.inst.Init();
         LocalSearchMgr.inst.InitValues();
         SplitMgr.inst.InitValues();
+        PopulationMgr.inst.InitValues();
+        GeneticMgr.inst.Init();
     }
 
     // Update is called once per frame
@@ -23,10 +25,9 @@ public class CVRPMain : MonoBehaviour
                 //ran = true;
                 //SplitMgr.inst.Init();
                 //LocalSearchMgr.inst.Init();
-                PopulationMgr.inst.Init();
+                //PopulationMgr.inst.Init();
 
             }
         }
-        
     }
 }

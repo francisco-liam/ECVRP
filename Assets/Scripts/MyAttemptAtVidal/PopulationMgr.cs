@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -62,7 +63,7 @@ public class PopulationMgr : MonoBehaviour
         {
             listFeasibilityLoad.Add(indiv.eval.capacityExcess < float.Epsilon);
             listFeasibilityDuration.Add(indiv.eval.durationExcess < float.Epsilon);
-            listFeasibilityDuration.RemoveAt(0);
+            listFeasibilityLoad.RemoveAt(0);
             listFeasibilityDuration.RemoveAt(0);
         }
 
@@ -188,6 +189,43 @@ public class PopulationMgr : MonoBehaviour
         }
     }
 
+    public void ManagePenalties()
+    {
+        // Setting some bounds [0.1,100000] to the penalty values for safety
+        float fractionFeasibleLoad = listFeasibilityLoad.Count(x => x) / (float) listFeasibilityLoad.Count;
+        if (fractionFeasibleLoad < CVRPMgr.inst.ap.targetFeasible - 0.05f && CVRPMgr.inst.penaltyCapacity < 100000)
+		    CVRPMgr.inst.penaltyCapacity = Mathf.Min(CVRPMgr.inst.penaltyCapacity * CVRPMgr.inst.ap.penaltyIncrease, 100000);
+        else if (fractionFeasibleLoad > CVRPMgr.inst.ap.targetFeasible + 0.05 && CVRPMgr.inst.penaltyCapacity > 0.1f)
+		    CVRPMgr.inst.penaltyCapacity = Mathf.Max(CVRPMgr.inst.penaltyCapacity* CVRPMgr.inst.ap.penaltyDecrease, 0.1f);
+
+        // Setting some bounds [0.1,100000] to the penalty values for safety
+        double fractionFeasibleDuration = listFeasibilityDuration.Count(x => x) / (float)listFeasibilityDuration.Count;
+        if (fractionFeasibleDuration < CVRPMgr.inst.ap.targetFeasible - 0.05 && CVRPMgr.inst.penaltyDuration < 100000)
+		    CVRPMgr.inst.penaltyDuration = Mathf.Min(CVRPMgr.inst.penaltyDuration* CVRPMgr.inst.ap.penaltyIncrease, 100000);
+        else if (fractionFeasibleDuration > CVRPMgr.inst.ap.targetFeasible + 0.05 && CVRPMgr.inst.penaltyDuration > 0.1f)
+		    CVRPMgr.inst.penaltyDuration = Mathf.Max(CVRPMgr.inst.penaltyDuration* CVRPMgr.inst.ap.penaltyDecrease, 0.1f);
+
+        // Update the evaluations
+        for (int i = 0; i < infeasibleSubpop.Count; i++)
+            infeasibleSubpop[i].eval.penalizedCost = infeasibleSubpop[i].eval.distance
+            + CVRPMgr.inst.penaltyCapacity * infeasibleSubpop[i].eval.capacityExcess
+            + CVRPMgr.inst.penaltyDuration * infeasibleSubpop[i].eval.durationExcess;
+
+        // If needed, reorder the individuals in the infeasible subpopulation since the penalty values have changed (simple bubble sort for the sake of simplicity)
+        for (int i = 0; i < infeasibleSubpop.Count; i++)
+        {
+            for (int j = 0; j < infeasibleSubpop.Count - i - 1; j++)
+            {
+                if (infeasibleSubpop[j].eval.penalizedCost > infeasibleSubpop[j + 1].eval.penalizedCost + float.Epsilon)
+                {
+                    Individual indiv = infeasibleSubpop[j];
+                    infeasibleSubpop[j] = infeasibleSubpop[j + 1];
+                    infeasibleSubpop[j + 1] = indiv;
+                }
+            }
+        }
+    }
+
     public Individual GetBinaryTournament()
     {
         // Picking two individuals with uniform distribution over the union of the feasible and infeasible subpopulations
@@ -202,6 +240,42 @@ public class PopulationMgr : MonoBehaviour
         UpdateBiasedFitnesses(infeasibleSubpop);
         if (indiv1.biasedFitness < indiv2.biasedFitness) return indiv1;
         else return indiv2;
+    }
+
+    Individual GetBestFeasible()
+    {
+        if (feasibleSubpop.Count != 0) return feasibleSubpop[0];
+        else return null;
+    }
+
+    Individual GetBestInfeasible()
+    {
+        if (infeasibleSubpop.Count != 0) return infeasibleSubpop[0];
+        else return null;
+    }
+
+    public void PrintState(int nbIter, int nbIterNoImprovement)
+    {
+        string output = "";
+
+        output += string.Format("It {0,6} {1,6} | T(s) {2:F2}", nbIter, nbIterNoImprovement, (Time.realtimeSinceStartup - CVRPMgr.inst.startTime));
+
+        if (GetBestFeasible() != null) output += string.Format("\nFeas {0} {1:F2} {2:F2}", feasibleSubpop.Count, GetBestFeasible().eval.penalizedCost, GetAverageCost(feasibleSubpop));
+        else output += "\nNO-FEASIBLE";
+
+        if (GetBestInfeasible() != null) string.Format("\nInf {0} {1:F2} {2:F2}", infeasibleSubpop.Count, GetBestInfeasible().eval.penalizedCost, GetAverageCost(infeasibleSubpop));
+        else output += "\nNO-INFEASIBLE";
+
+        output += string.Format(
+            "\nDiv {0:F2} {1:F2} \nFeas {2:F2} {3:F2} \nPen {4:F2} {5:F2}",
+            GetDiversity(feasibleSubpop),
+            GetDiversity(infeasibleSubpop),
+            listFeasibilityLoad.Count(x => x) / (float)listFeasibilityLoad.Count,
+            listFeasibilityDuration.Count(x => x) / (float)listFeasibilityDuration.Count,
+            CVRPMgr.inst.penaltyCapacity,
+            CVRPMgr.inst.penaltyDuration);
+
+        Debug.Log(output);
     }
 
     float BrokenPairsDistance(Individual indiv1,  Individual indiv2)
@@ -230,7 +304,25 @@ public class PopulationMgr : MonoBehaviour
         return result / maxSize;
     }
 
-    void InitValues()
+    float GetDiversity(List<Individual> pop)
+    {
+	    float average = 0;
+        int size = Mathf.Min(CVRPMgr.inst.ap.mu, pop.Count); // Only monitoring the "mu" better solutions to avoid too much noise in the measurements
+	    for (int i = 0; i<size; i++) average += AverageBrokenPairsDistanceClosest(pop[i], size);
+	    if (size > 0) return average / (float) size;
+	    else return -1.0f;
+    }
+
+    float GetAverageCost(List<Individual> pop)
+    {
+	    float average = 0;
+        int size = Mathf.Min(CVRPMgr.inst.ap.mu, pop.Count); // Only monitoring the "mu" better solutions to avoid too much noise in the measurements
+	    for (int i = 0; i<size; i++) average += pop[i].eval.penalizedCost;
+	    if (size > 0) return average / (float) size;
+	    else return -1.0f;
+    }
+
+    public void InitValues()
     {
         feasibleSubpop = new List<Individual>();
         infeasibleSubpop = new List<Individual>();
