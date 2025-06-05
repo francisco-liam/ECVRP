@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Linq;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using Color = UnityEngine.Color;
 
 public class PopulationMgr : MonoBehaviour
 {
@@ -42,7 +43,7 @@ public class PopulationMgr : MonoBehaviour
     public void GeneratePopulation()
     {
         Debug.Log("----- BUILDING INITIAL POPULATION");
-        for(int i = 0; i < CVRPMgr.inst.ap.mu && 
+        for(int i = 0; i < 4*CVRPMgr.inst.ap.mu && 
             (i == 0 || CVRPMgr.inst.ap.timeLimit == 0 || Time.realtimeSinceStartup - CVRPMgr.inst.startTime < CVRPMgr.inst.ap.timeLimit); i++)
         {
             Individual randomIndiv = new Individual();
@@ -98,11 +99,18 @@ public class PopulationMgr : MonoBehaviour
         // Track best solution
         if (indiv.eval.isFeasible && indiv.eval.penalizedCost < bestSolutionRestart.eval.penalizedCost - float.Epsilon)
         {
-            bestSolutionRestart = indiv; // Copy
+            bestSolutionRestart = indiv; // Copy       
             if (indiv.eval.penalizedCost < bestSolutionOverall.eval.penalizedCost - float.Epsilon)
             {
                 bestSolutionOverall = indiv;
                 searchProgress.Add(new Tuple<float, float>(Time.realtimeSinceStartup - CVRPMgr.inst.startTime, bestSolutionOverall.eval.penalizedCost));
+
+                GraphMgr.inst.RemoveAllEdges();
+                foreach (List<int> route in indiv.chromR)
+                {
+                    Color randomColor = new Color(Random.value, Random.value, Random.value);
+                    GraphMgr.inst.DrawRoute(route, randomColor);
+                }
             }
             return true;
         }
@@ -242,7 +250,7 @@ public class PopulationMgr : MonoBehaviour
         else return indiv2;
     }
 
-    Individual GetBestFeasible()
+    public Individual GetBestFeasible()
     {
         if (feasibleSubpop.Count != 0) return feasibleSubpop[0];
         else return null;
@@ -263,7 +271,7 @@ public class PopulationMgr : MonoBehaviour
         if (GetBestFeasible() != null) output += string.Format("\nFeas {0} {1:F2} {2:F2}", feasibleSubpop.Count, GetBestFeasible().eval.penalizedCost, GetAverageCost(feasibleSubpop));
         else output += "\nNO-FEASIBLE";
 
-        if (GetBestInfeasible() != null) string.Format("\nInf {0} {1:F2} {2:F2}", infeasibleSubpop.Count, GetBestInfeasible().eval.penalizedCost, GetAverageCost(infeasibleSubpop));
+        if (GetBestInfeasible() != null) output += string.Format("\nInf {0} {1:F2} {2:F2}", infeasibleSubpop.Count, GetBestInfeasible().eval.penalizedCost, GetAverageCost(infeasibleSubpop));
         else output += "\nNO-INFEASIBLE";
 
         output += string.Format(
@@ -274,6 +282,14 @@ public class PopulationMgr : MonoBehaviour
             listFeasibilityDuration.Count(x => x) / (float)listFeasibilityDuration.Count,
             CVRPMgr.inst.penaltyCapacity,
             CVRPMgr.inst.penaltyDuration);
+
+        if (GetBestFeasible() != null)
+        {
+            foreach(List<int> route in GetBestFeasible().chromR)
+            {
+                output += "\n" + BasicsChecking.PrintList(route);
+            }
+        }
 
         Debug.Log(output);
     }
@@ -330,7 +346,9 @@ public class PopulationMgr : MonoBehaviour
         listFeasibilityDuration = Enumerable.Repeat(true, CVRPMgr.inst.ap.nbIterPenaltyManagement).ToList();
         searchProgress = new List<Tuple<float, float>>();
         bestSolutionRestart = new Individual();
+        bestSolutionRestart.eval.penalizedCost = 1e30f;
         bestSolutionOverall = new Individual();
+        bestSolutionOverall.eval.penalizedCost = 1e30f;
 
     }
 

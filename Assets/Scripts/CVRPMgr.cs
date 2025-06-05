@@ -72,7 +72,7 @@ public class CVRPProblem
         {
             for (int j = 0; j < i; j++)
             {
-                adjacencyMatrix[i, j] = Mathf.Round(Vector2.Distance(nodes[i].coordinate, nodes[j].coordinate));
+                adjacencyMatrix[i, j] = Vector2.Distance(nodes[i].coordinate, nodes[j].coordinate);
                 adjacencyMatrix[j, i] = adjacencyMatrix[i, j];
             }
         }

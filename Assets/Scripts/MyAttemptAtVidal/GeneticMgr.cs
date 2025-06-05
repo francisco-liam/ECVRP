@@ -26,12 +26,12 @@ public class GeneticMgr : MonoBehaviour
         Debug.Log("----- STARTING GENETIC ALGORITHM");
     }
 
-    bool running;
+    public bool running;
     // Update is called once per frame
     void Update()
     {
-        //if (Input.GetKeyDown(KeyCode.Alpha1))
-        //{
+        if (running)//Input.GetKeyDown(KeyCode.Alpha1))
+        {
             if (nbIterNonProd <= CVRPMgr.inst.ap.nbIter && (CVRPMgr.inst.ap.timeLimit == 0 || Time.realtimeSinceStartup - CVRPMgr.inst.startTime < CVRPMgr.inst.ap.timeLimit))
             {
                 running = true;
@@ -74,7 +74,7 @@ public class GeneticMgr : MonoBehaviour
                     nbIter,
                     Time.realtimeSinceStartup - CVRPMgr.inst.startTime));
             }
-        //}
+        }
     }
 
     Individual CrossoverOX(Individual parent1, Individual parent2)

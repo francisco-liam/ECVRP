@@ -600,7 +600,7 @@ public class LocalSearchMgr : MonoBehaviour
         {
             return false;
         }
-
+        
         float cost = matrix[nodeUIndex, nodeVIndex] + matrix[nodeXIndex, nodeYIndex]
             - matrix[nodeUIndex, nodeXIndex] - matrix[nodeVIndex, nodeYIndex]
             + nodeV.cumulatedReversalDistance + routeU.reversalDistance
@@ -1135,6 +1135,15 @@ public class LocalSearchMgr : MonoBehaviour
             depotsEnd[i].cour = 0;
             depotsEnd[i].isDepot = true;
             depotsEnd[i].route = routes[i];
+
+            // Circularize route
+            depots[i].next = depotsEnd[i];
+            depotsEnd[i].prev = depots[i];
+
+            // Optional: connect tail to head if needed
+            depotsEnd[i].next = depots[i];
+            depots[i].prev = depotsEnd[i];
+
         }
         for (int i = 1; i <= CVRPMgr.inst.problem.customers; i++)
             orderNodes.Add(i);
