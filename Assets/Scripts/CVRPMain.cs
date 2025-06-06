@@ -4,7 +4,15 @@ using UnityEngine;
 
 public class CVRPMain : MonoBehaviour
 {
+    public static CVRPMain inst;
+
     public int seed;
+    public int run;
+
+    private void Awake()
+    {
+        inst = this;
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -16,6 +24,7 @@ public class CVRPMain : MonoBehaviour
         SplitMgr.inst.InitValues();
         PopulationMgr.inst.InitValues();
         GeneticMgr.inst.Init();
+        run = 0;
     }
 
     // Update is called once per frame

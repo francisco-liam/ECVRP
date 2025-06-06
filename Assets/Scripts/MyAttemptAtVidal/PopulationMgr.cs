@@ -197,6 +197,16 @@ public class PopulationMgr : MonoBehaviour
         }
     }
 
+    public void Restart()
+    {
+        Debug.Log("----- RESET: CREATING A NEW POPULATION -----");
+        feasibleSubpop.Clear();
+        infeasibleSubpop.Clear();
+        bestSolutionRestart = new Individual();
+        bestSolutionRestart.eval.penalizedCost = 1e30f;
+        GeneratePopulation();
+    }
+
     public void ManagePenalties()
     {
         // Setting some bounds [0.1,100000] to the penalty values for safety
@@ -256,7 +266,7 @@ public class PopulationMgr : MonoBehaviour
         else return null;
     }
 
-    Individual GetBestInfeasible()
+    public Individual GetBestInfeasible()
     {
         if (infeasibleSubpop.Count != 0) return infeasibleSubpop[0];
         else return null;

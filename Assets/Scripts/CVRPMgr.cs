@@ -22,6 +22,7 @@ public class AlgorithmParameters {
     public int nbIterTraces;       // Number of iterations between traces display during HGS execution
     public float timeLimit;       // CPU time limit until termination in seconds. Default value: 0 (i.e., inactive)
     public bool useSwapStar;		// Use SWAP* local search or not. Default value: 1. Only available when coordinates are provided.
+    public bool useSetNbOfIter;
 
     public AlgorithmParameters()
     {
