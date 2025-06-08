@@ -105,6 +105,9 @@ public class PopulationMgr : MonoBehaviour
                 bestSolutionOverall = indiv;
                 searchProgress.Add(new Tuple<float, float>(Time.realtimeSinceStartup - CVRPMgr.inst.startTime, bestSolutionOverall.eval.penalizedCost));
 
+                StatsMgr.inst.bestCosts[CVRPMain.inst.run] = indiv.eval.penalizedCost;
+                StatsMgr.inst.speeds[CVRPMain.inst.run] = GeneticMgr.inst.nbIter;
+
                 GraphMgr.inst.RemoveAllEdges();
                 foreach (List<int> route in indiv.chromR)
                 {
@@ -204,6 +207,8 @@ public class PopulationMgr : MonoBehaviour
         infeasibleSubpop.Clear();
         bestSolutionRestart = new Individual();
         bestSolutionRestart.eval.penalizedCost = 1e30f;
+        bestSolutionOverall = new Individual();
+        bestSolutionOverall.eval.penalizedCost = 1e30f;
         GeneratePopulation();
     }
 

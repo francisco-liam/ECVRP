@@ -12,14 +12,12 @@ public class StatsMgr : MonoBehaviour
     public List<List<float>> averageTotalPopulationFitness;
     public List<List<float>> averageFeasiblePopulationFitness;
     public List<List<float>> averageInfeasiblePopulationFitness;
-    public List<List<float>> minTotalPopulationFitness;
-    public List<List<float>> minFeasiblePopulationFitness;
-    public List<List<float>> minInfeasiblePopulationFitness;
-    public List<List<float>> maxTotalPopulationCost;
-    public List<List<float>> maxFeasiblePopulationCost;
-    public List<List<float>> maxInfeasiblePopulationCost;
-
-    public string filename;
+    public List<List<float>> maxTotalPopulationFitness;
+    public List<List<float>> maxFeasiblePopulationFitness;
+    public List<List<float>> maxInfeasiblePopulationFitness;
+    public List<List<float>> minTotalPopulationCost;
+    public List<List<float>> minFeasiblePopulationCost;
+    public List<List<float>> minInfeasiblePopulationCost;
 
     private void Awake()
     {
@@ -29,7 +27,7 @@ public class StatsMgr : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+        Debug.Log(Application.dataPath);
     }
 
     // Update is called once per frame
@@ -192,13 +190,27 @@ public class StatsMgr : MonoBehaviour
         averageTotalPopulationFitness.Add(new List<float>());
         averageFeasiblePopulationFitness.Add(new List<float>());
         averageInfeasiblePopulationFitness.Add(new List<float>());
-        minTotalPopulationFitness.Add(new List<float>());
-        minFeasiblePopulationFitness.Add(new List<float>());
-        minInfeasiblePopulationFitness.Add(new List<float>());
-        maxTotalPopulationCost.Add(new List<float>());
-        maxFeasiblePopulationCost.Add(new List<float>());
-        maxInfeasiblePopulationCost.Add(new List<float>());
+        maxTotalPopulationFitness.Add(new List<float>());
+        maxFeasiblePopulationFitness.Add(new List<float>());
+        maxInfeasiblePopulationFitness.Add(new List<float>());
+        minTotalPopulationCost.Add(new List<float>());
+        minFeasiblePopulationCost.Add(new List<float>());
+        minInfeasiblePopulationCost.Add(new List<float>());
 
+    }
+
+    //ran each generation
+    public void RecordRunData(int runNum)
+    {
+        averageTotalPopulationFitness[runNum].Add(GetAverageTotalPopulationFitness());
+        averageFeasiblePopulationFitness[runNum].Add(GetAverageFeasiblePopulationFitness());
+        averageInfeasiblePopulationFitness[runNum].Add(GetAverageInfeasiblePopulationFitness());
+        maxTotalPopulationFitness[runNum].Add(GetMaxTotalPopulationFitness());
+        maxFeasiblePopulationFitness[runNum].Add(GetMaxFeasiblePopulationFitness());
+        maxInfeasiblePopulationFitness[runNum].Add(GetMaxInfeasiblePopulationFitness());
+        minTotalPopulationCost[runNum].Add(GetMinTotalPopulationCost());
+        minFeasiblePopulationCost[runNum].Add(GetMinFeasiblePopulationCost());
+        minInfeasiblePopulationCost[runNum].Add(GetMinInfeasiblePopulationCost());
     }
 
     public void InitValues()
@@ -209,11 +221,11 @@ public class StatsMgr : MonoBehaviour
         averageTotalPopulationFitness = new List<List<float>>();
         averageFeasiblePopulationFitness = new List<List<float>>();
         averageInfeasiblePopulationFitness = new List<List<float>>();
-        minTotalPopulationFitness = new List<List<float>>();
-        minFeasiblePopulationFitness = new List<List<float>>();
-        minInfeasiblePopulationFitness = new List<List<float>>();
-        maxTotalPopulationCost = new List<List<float>>();
-        maxFeasiblePopulationCost = new List<List<float>>();
-        maxInfeasiblePopulationCost = new List<List<float>>();
+        maxTotalPopulationFitness = new List<List<float>>();
+        maxFeasiblePopulationFitness = new List<List<float>>();
+        maxInfeasiblePopulationFitness = new List<List<float>>();
+        minTotalPopulationCost = new List<List<float>>();
+        minFeasiblePopulationCost = new List<List<float>>();
+        minInfeasiblePopulationCost = new List<List<float>>();
     }
 }

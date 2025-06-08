@@ -8,6 +8,7 @@ public class CVRPMain : MonoBehaviour
 
     public int seed;
     public int run;
+    public int maxRuns;
 
     private void Awake()
     {
@@ -20,6 +21,8 @@ public class CVRPMain : MonoBehaviour
         Random.InitState(seed);
         CVRPMgr.inst.Init();
         GraphMgr.inst.CreateGraph();
+        StatsMgr.inst.InitValues();
+        StatsMgr.inst.InitRun();
         LocalSearchMgr.inst.InitValues();
         SplitMgr.inst.InitValues();
         PopulationMgr.inst.InitValues();
