@@ -57,9 +57,14 @@ public class FileWriterMgr : MonoBehaviour
     public void AppendMetricCSV()
     {
         string filePath = Path.Combine(directoryPath, fileNames[0]);
-        File.AppendAllText(filePath, CVRPMain.inst.run + ", " + CVRPMain.inst.seed
+        if (CVRPMain.inst.run == 0)
+            File.WriteAllText(filePath, CVRPMain.inst.run + ", " + CVRPMain.inst.seed
             + ", " + StatsMgr.inst.bestCosts[CVRPMain.inst.run]
             + ", " + StatsMgr.inst.speeds[CVRPMain.inst.run] + "\n");
+        else
+            File.AppendAllText(filePath, CVRPMain.inst.run + ", " + CVRPMain.inst.seed
+                + ", " + StatsMgr.inst.bestCosts[CVRPMain.inst.run]
+                + ", " + StatsMgr.inst.speeds[CVRPMain.inst.run] + "\n");
     }
 
     // Start is called before the first frame update

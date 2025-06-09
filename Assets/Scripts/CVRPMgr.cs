@@ -74,6 +74,8 @@ public class CVRPProblem
             for (int j = 0; j < i; j++)
             {
                 adjacencyMatrix[i, j] = Vector2.Distance(nodes[i].coordinate, nodes[j].coordinate);
+                if(CVRPMgr.inst.roundDist)
+                    adjacencyMatrix[i, j] = Mathf.Round(adjacencyMatrix[i, j]);
                 adjacencyMatrix[j, i] = adjacencyMatrix[i, j];
             }
         }
@@ -112,6 +114,8 @@ public class CVRPMgr : MonoBehaviour
     public float maxDist;   // Maximum distance between two clients
     public float maxDemand; // Maximum demand of a client
     public List<List<int>> correlatedVertices;	// Neighborhood restrictions: For each client, list of nearby customers
+
+    public bool roundDist;
 
     // Start is called before the first frame update
     void Awake()

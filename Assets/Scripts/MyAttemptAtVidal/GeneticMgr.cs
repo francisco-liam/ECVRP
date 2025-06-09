@@ -79,7 +79,7 @@ public class GeneticMgr : MonoBehaviour
                     "----- GENETIC ALGORITHM FINISHED AFTER {0} ITERATIONS. TIME SPENT: {1:F2}",
                     nbIter,
                     Time.realtimeSinceStartup - CVRPMgr.inst.startTime));
-
+                
                 FileWriterMgr.inst.AppendMetricCSV();
                 FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[1],
                     StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.averageTotalPopulationFitness));

@@ -4,7 +4,10 @@ using UnityEngine;
 
 public class CameraMgr : MonoBehaviour
 {
+    public Transform cameraTransform;
     public float zoomSpeed;
+    public float panningSpeed;
+    private Vector3 dragOrigin;
     // Start is called before the first frame update
     void Start()
     {
@@ -15,7 +18,15 @@ public class CameraMgr : MonoBehaviour
     void Update()
     {
         float scroll = Input.mouseScrollDelta.y;
-        float zValue = Mathf.Clamp(Camera.main.transform.position.z + scroll * zoomSpeed, -100, -60);
-        Camera.main.transform.position = new Vector3(0, 0, zValue);
+        float zValue = Mathf.Clamp(Camera.main.transform.position.z + scroll * zoomSpeed, -140, -60);
+        cameraTransform.position = new Vector3(cameraTransform.position.x, cameraTransform.position.y, zValue);
+
+        // While holding middle mouse
+        if (Input.GetMouseButton(2))
+        {
+            Vector3 difference = dragOrigin - Input.mousePosition;
+            cameraTransform.position += difference * panningSpeed;
+        }
+        dragOrigin = Input.mousePosition;
     }
 }

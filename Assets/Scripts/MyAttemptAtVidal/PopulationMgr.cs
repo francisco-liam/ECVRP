@@ -33,10 +33,10 @@ public class PopulationMgr : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(Input.GetKey(KeyCode.Space))
+        if(Input.GetKeyDown(KeyCode.Space))
         {
-            UpdateBiasedFitnesses(feasibleSubpop);
-            UpdateBiasedFitnesses(infeasibleSubpop);
+            foreach(List<int> route in bestSolutionOverall.chromR)
+                Debug.Log(BasicsChecking.PrintList(route));
         }
     }
 
