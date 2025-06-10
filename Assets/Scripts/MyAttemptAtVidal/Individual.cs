@@ -80,7 +80,6 @@ public class Individual
                 successors[chromR[r][chromR[r].Count - 1]] = 0;
                 distance += CVRPMgr.inst.problem.adjacencyMatrix[chromR[r][chromR[r].Count - 1], 0];
                 eval.distance += distance;
-                eval.distance = Mathf.Round(eval.distance);
                 eval.nbRoutes++;
                 if (load > CVRPMgr.inst.problem.capacity) eval.capacityExcess += load - CVRPMgr.inst.problem.capacity;
                 if (distance /*+ service*/ > CVRPMgr.inst.durationLimit) eval.durationExcess += distance /*+ service*/ - CVRPMgr.inst.durationLimit;

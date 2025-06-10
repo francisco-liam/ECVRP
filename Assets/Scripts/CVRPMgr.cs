@@ -75,7 +75,7 @@ public class CVRPProblem
             {
                 adjacencyMatrix[i, j] = Vector2.Distance(nodes[i].coordinate, nodes[j].coordinate);
                 if(CVRPMgr.inst.roundDist)
-                    adjacencyMatrix[i, j] = Mathf.Round(adjacencyMatrix[i, j]);
+                    adjacencyMatrix[i, j] = (float) Math.Round(adjacencyMatrix[i, j], MidpointRounding.AwayFromZero);
                 adjacencyMatrix[j, i] = adjacencyMatrix[i, j];
             }
         }
