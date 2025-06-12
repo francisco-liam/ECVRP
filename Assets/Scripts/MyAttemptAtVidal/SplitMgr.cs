@@ -168,7 +168,7 @@ public class SplitMgr : MonoBehaviour
 
     bool DominatesRight(int i, int j, int k)
     {
-        return potential[k, j] + cliSplit[j + 1].d0_x < potential[k, i] + cliSplit[i + 1].d0_x + sumDistance[j + 1] - sumDistance[i + 1] + float.Epsilon;
+        return potential[k, j] + cliSplit[j + 1].d0_x < potential[k, i] + cliSplit[i + 1].d0_x + sumDistance[j + 1] - sumDistance[i + 1] + 0.00001f;
     }
 
     bool SimpleSplit(Individual indiv)
@@ -196,7 +196,7 @@ public class SplitMgr : MonoBehaviour
                     queue.PushBack(i);
                 }
                 // Check iteratively if front is dominated by the next front
-                while (queue.Size() > 1 && Propagate(queue.GetFront(), i + 1, 0) > Propagate(queue.GetNextFront(), i + 1, 0) - float.Epsilon)
+                while (queue.Size() > 1 && Propagate(queue.GetFront(), i + 1, 0) > Propagate(queue.GetNextFront(), i + 1, 0) - 0.00001f)
                     queue.PopFront();
             }
         }
@@ -264,7 +264,7 @@ public class SplitMgr : MonoBehaviour
                 }
 
                 // Check iteratively if front is dominated by the next front
-                while (queue.Size() > 1 && Propagate(queue.GetBack(), i + 1, k) > Propagate(queue.GetNextFront(), i + 1, k) - float.Epsilon)
+                while (queue.Size() > 1 && Propagate(queue.GetBack(), i + 1, k) > Propagate(queue.GetNextFront(), i + 1, k) - 0.00001f)
                     queue.PopFront();
                 }
             }

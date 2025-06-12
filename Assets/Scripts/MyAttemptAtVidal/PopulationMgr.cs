@@ -62,8 +62,8 @@ public class PopulationMgr : MonoBehaviour
     {
         if (updateFeasible)
         {
-            listFeasibilityLoad.Add(indiv.eval.capacityExcess < float.Epsilon);
-            listFeasibilityDuration.Add(indiv.eval.durationExcess < float.Epsilon);
+            listFeasibilityLoad.Add(indiv.eval.capacityExcess < 0.00001f);
+            listFeasibilityDuration.Add(indiv.eval.durationExcess < 0.00001f);
             listFeasibilityLoad.RemoveAt(0);
             listFeasibilityDuration.RemoveAt(0);
         }
@@ -88,7 +88,7 @@ public class PopulationMgr : MonoBehaviour
 
         // Identify the correct location in the subpopulation and insert the individual
         int place = subpop.Count;
-        while (place > 0 && subpop[place - 1].eval.penalizedCost > indiv.eval.penalizedCost - float.Epsilon) place--;
+        while (place > 0 && subpop[place - 1].eval.penalizedCost > indiv.eval.penalizedCost - 0.00001f) place--;
         subpop.Insert(place, myIndividual);
 
         // Trigger a survivor selection if the maximimum subpopulation size is exceeded
@@ -97,10 +97,10 @@ public class PopulationMgr : MonoBehaviour
 			    RemoveWorstBiasedFitness(subpop);
 
         // Track best solution
-        if (indiv.eval.isFeasible && indiv.eval.penalizedCost < bestSolutionRestart.eval.penalizedCost - float.Epsilon)
+        if (indiv.eval.isFeasible && indiv.eval.penalizedCost < bestSolutionRestart.eval.penalizedCost - 0.00001f)
         {
             bestSolutionRestart = indiv; // Copy       
-            if (indiv.eval.penalizedCost < bestSolutionOverall.eval.penalizedCost - float.Epsilon)
+            if (indiv.eval.penalizedCost < bestSolutionOverall.eval.penalizedCost - 0.00001f)
             {
                 bestSolutionOverall = indiv;
                 searchProgress.Add(new Tuple<float, float>(Time.realtimeSinceStartup - CVRPMgr.inst.startTime, bestSolutionOverall.eval.penalizedCost));
@@ -165,7 +165,7 @@ public class PopulationMgr : MonoBehaviour
 
         for (int i = 1; i < pop.Count; i++)
         {
-            bool isClone = (AverageBrokenPairsDistanceClosest(pop[i], 1) < float.Epsilon); // A distance equal to 0 indicates that a clone exists
+            bool isClone = (AverageBrokenPairsDistanceClosest(pop[i], 1) < 0.00001f); // A distance equal to 0 indicates that a clone exists
             if ((isClone && !isWorstIndividualClone) || (isClone == isWorstIndividualClone && pop[i].biasedFitness > worstIndividualBiasedFitness))
             {
                 worstIndividualBiasedFitness = pop[i].biasedFitness;
@@ -239,7 +239,7 @@ public class PopulationMgr : MonoBehaviour
         {
             for (int j = 0; j < infeasibleSubpop.Count - i - 1; j++)
             {
-                if (infeasibleSubpop[j].eval.penalizedCost > infeasibleSubpop[j + 1].eval.penalizedCost + float.Epsilon)
+                if (infeasibleSubpop[j].eval.penalizedCost > infeasibleSubpop[j + 1].eval.penalizedCost + 0.00001f)
                 {
                     Individual indiv = infeasibleSubpop[j];
                     infeasibleSubpop[j] = infeasibleSubpop[j + 1];

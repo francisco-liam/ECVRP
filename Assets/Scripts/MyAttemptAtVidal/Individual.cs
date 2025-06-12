@@ -87,7 +87,7 @@ public class Individual
         }
 
         eval.penalizedCost = eval.distance + eval.capacityExcess * CVRPMgr.inst.penaltyCapacity + eval.durationExcess * CVRPMgr.inst.penaltyDuration;
-        eval.isFeasible = (eval.capacityExcess < float.Epsilon && eval.durationExcess < float.Epsilon);
+        eval.isFeasible = (eval.capacityExcess < 0.00001f && eval.durationExcess < 0.00001f);
     }
 
     public Individual()

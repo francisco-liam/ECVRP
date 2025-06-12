@@ -205,7 +205,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   nbIter: 0
   nbIterNonProd: 1
-  running: 1
+  running: 0
+  write: 0
 --- !u!4 &289980101
 Transform:
   m_ObjectHideFlags: 0
@@ -380,7 +381,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   seed: 0
   run: 0
-  maxRuns: 1
+  maxRuns: 0
 --- !u!4 &460809558
 Transform:
   m_ObjectHideFlags: 0
@@ -592,6 +593,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0810142b13d1ff4418420fcd3c46083c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  loopID: 0
   clients: []
   depots: []
   depotsEnd: []

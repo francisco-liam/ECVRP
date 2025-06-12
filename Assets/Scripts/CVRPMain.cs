@@ -27,18 +27,19 @@ public class CVRPMain : MonoBehaviour
         SplitMgr.inst.InitValues();
         PopulationMgr.inst.InitValues();
         GeneticMgr.inst.Init();
+        //LocalSearchMgr.inst.Init();
         run = 0;
     }
 
     // Update is called once per frame
     bool ran = false;
     void Update()
-    {
-        if(Input.GetKeyUp(KeyCode.Alpha1))
+    { 
+        /*if(Input.GetKeyUp(KeyCode.Alpha1))
         {
             foreach (List<int> route in PopulationMgr.inst.GetBestFeasible().chromR)
                 Debug.Log(BasicsChecking.PrintList(route));
             
-        }
+        }*/
     }
 }

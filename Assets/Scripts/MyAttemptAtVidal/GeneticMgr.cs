@@ -28,6 +28,7 @@ public class GeneticMgr : MonoBehaviour
     }
 
     public bool running;
+    public bool write;
     // Update is called once per frame
     void Update()
     {
@@ -79,26 +80,29 @@ public class GeneticMgr : MonoBehaviour
                     "----- GENETIC ALGORITHM FINISHED AFTER {0} ITERATIONS. TIME SPENT: {1:F2}",
                     nbIter,
                     Time.realtimeSinceStartup - CVRPMgr.inst.startTime));
-                
-                FileWriterMgr.inst.AppendMetricCSV();
-                FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[1],
-                    StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.averageTotalPopulationFitness));
-                FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[2],
-                    StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.averageFeasiblePopulationFitness));
-                FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[3],
-                    StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.averageInfeasiblePopulationFitness));
-                FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[4],
-                    StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.maxTotalPopulationFitness));
-                FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[5],
-                    StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.maxFeasiblePopulationFitness));
-                FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[6],
-                    StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.maxInfeasiblePopulationFitness));
-                FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[7],
-                    StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.minTotalPopulationCost));
-                FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[8],
-                    StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.minFeasiblePopulationCost));
-                FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[9],
-                    StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.minInfeasiblePopulationCost));
+
+                if (write)
+                {
+                    FileWriterMgr.inst.AppendMetricCSV();
+                    FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[1],
+                        StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.averageTotalPopulationFitness));
+                    FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[2],
+                        StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.averageFeasiblePopulationFitness));
+                    FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[3],
+                        StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.averageInfeasiblePopulationFitness));
+                    FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[4],
+                        StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.maxTotalPopulationFitness));
+                    FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[5],
+                        StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.maxFeasiblePopulationFitness));
+                    FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[6],
+                        StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.maxInfeasiblePopulationFitness));
+                    FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[7],
+                        StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.minTotalPopulationCost));
+                    FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[8],
+                        StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.minFeasiblePopulationCost));
+                    FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[9],
+                        StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.minInfeasiblePopulationCost));
+                }
             }
         }
         else if (CVRPMain.inst.run < CVRPMain.inst.maxRuns - 1)

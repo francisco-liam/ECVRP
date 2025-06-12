@@ -100,7 +100,7 @@ public class LocalSearchMgr : MonoBehaviour
     List<int> orderNodes;               // Randomized order for checking the nodes in the RI local search
     List<int> orderRoutes;			// Randomized order for checking the routes in the SWAP* local search
     public SortedSet<int> emptyRoutes;  // indices of all empty routes
-    int loopID;									// Current loop index
+    public int loopID;									// Current loop index
 
     public Node[] clients;              // Elements representing clients (clients[0] is a sentinel and should not be accessed)
     public Node[] depots;				// Elements representing depots
@@ -142,9 +142,103 @@ public class LocalSearchMgr : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            if (loopID > 1) // Allows at least two loops since some moves involving empty routes are not checked at the first loop
+                searchCompleted = true;
 
+            //CLASSICAL ROUTE IMPROVEMENT(RI) MOVES SUBJECT TO A PROXIMITY RESTRICTION
+            for (int posU = 0; posU < CVRPMgr.inst.problem.customers; posU++)
+            {
+                nodeU = clients[orderNodes[posU]];
+                int lastTestRINodeU = nodeU.whenLastTestedRI;
+                nodeU.whenLastTestedRI = nbMoves;
+                for (int posV = 0; posV < (int)CVRPMgr.inst.correlatedVertices[nodeU.cour].Count; posV++)
+                {
+                    nodeV = clients[CVRPMgr.inst.correlatedVertices[nodeU.cour][posV]];
+
+                    if (loopID == 0 || Mathf.Max(nodeU.route.whenLastModified, nodeV.route.whenLastModified) > lastTestRINodeU) // only evaluate moves involving routes that have been modified since last move evaluations for nodeU
+                    {
+                        // Randomizing the order of the neighborhoods within this loop does not matter much as we are already randomizing the order of the node pairs (and it's not very common to find improving moves of different types for the same node pair)
+                        SetLocalVariablesRouteU();
+                        SetLocalVariablesRouteV();
+                        if (Move1()) { PrintMove(1); continue; } // RELOCATE
+                        if (Move2()) { PrintMove(2); continue; } // RELOCATE
+                        if (Move3()) { PrintMove(3); continue; }// RELOCATE
+                        if (nodeUIndex <= nodeVIndex && Move4()) { PrintMove(4); continue; } // SWAP
+                        if (Move5()) { PrintMove(5); continue; }// SWAP
+                        if (nodeUIndex <= nodeVIndex && Move6()) { PrintMove(6); continue; }// SWAP
+                        if (intraRouteMove && Move7()) { PrintMove(7); continue; } // 2-OPT
+                        if (!intraRouteMove && Move8()) { PrintMove(8); continue; } // 2-OPT*
+                        if (!intraRouteMove && Move9()) { PrintMove(9); continue; } // 2-OPT*
+
+                        // Trying moves that insert nodeU directly after the depot
+                        if (nodeV.prev.isDepot)
+                        {
+                            nodeV = nodeV.prev;
+                            SetLocalVariablesRouteV();
+                            if (Move1()) { PrintMove(1); continue; } // RELOCATE
+                            if (Move2()) { PrintMove(2); continue; }// RELOCATE
+                            if (Move3()) { PrintMove(3); continue; }// RELOCATE
+                            if (!intraRouteMove && Move8()) { PrintMove(8); continue; }// 2-OPT*
+                            if (!intraRouteMove && Move9()) { PrintMove(9); continue; }// 2-OPT*
+                        }
+                    }
+                }
+
+                //MOVES INVOLVING AN EMPTY ROUTE-- NOT TESTED IN THE FIRST LOOP TO AVOID INCREASING TOO MUCH THE FLEET SIZE
+                if (loopID > 0 && emptyRoutes.Count != 0)
+                {
+                    nodeV = routes[emptyRoutes.First()].depot;
+                    SetLocalVariablesRouteU();
+                    SetLocalVariablesRouteV();
+                    if (Move1()) { PrintMove(1); continue; } // RELOCATE
+                    if (Move2()) { PrintMove(2); continue; } // RELOCATE
+                    if (Move3()) { PrintMove(3); continue; } // RELOCATE
+                    if (Move9()) { PrintMove(9); continue; } // 2-OPT*
+                }
+            }
+
+            if (CVRPMgr.inst.ap.useSwapStar == true)
+            {
+                //(SWAP*)MOVES LIMITED TO ROUTE PAIRS WHOSE CIRCLE SECTORS OVERLAP
+                for (int rU = 0; rU < CVRPMgr.inst.problem.vehicles; rU++)
+                {
+                    routeU = routes[orderRoutes[rU]];
+                    int lastTestSWAPStarRouteU = routeU.whenLastTestedSWAPStar;
+                    routeU.whenLastTestedSWAPStar = nbMoves;
+                    for (int rV = 0; rV < CVRPMgr.inst.problem.vehicles; rV++)
+                    {
+                        routeV = routes[orderRoutes[rV]];
+                        if (routeU.nbCustomers > 0 && routeV.nbCustomers > 0 && routeU.cour < routeV.cour
+                            && (loopID == 0 || Mathf.Max(routeU.whenLastModified, routeV.whenLastModified)
+                                > lastTestSWAPStarRouteU))
+                            if (CircleSector.overlap(routeU.sector, routeV.sector))
+                                SwapStar();
+                    }
+                }
+            }
+
+            Debug.Log($"Loop {loopID}, Search Completed: {searchCompleted}");
+            loopID++;
+
+            Individual print = new Individual();
+            ExportIndividual(print);
+            foreach (List<int> route in print.chromR)
+                Debug.Log(BasicsChecking.PrintList(route));
+        }
     }
 
+    void PrintMove(int moveNum)
+    {
+        Debug.Log($"Move {moveNum} performed between nodes {nodeU.cour} and {nodeV.cour}");
+        Individual print = new Individual();
+        ExportIndividual(print);
+        foreach (List<int> route in print.chromR)
+            Debug.Log(BasicsChecking.PrintList(route));
+    }
+
+    bool printInMove;
     public void Run(Individual indiv, float penaltyCapacityLS, float penaltyDurationLS)
     {
         InitValues();
@@ -183,8 +277,11 @@ public class LocalSearchMgr : MonoBehaviour
         }
 
         searchCompleted = false;
-        for (loopID = 0; !searchCompleted && loopID < 5; loopID++)
-        {            
+        for (loopID = 0; !searchCompleted; loopID++)
+        {   
+            /*if(loopID <= 9)
+            {*/
+            printInMove = false;
             if (loopID > 1) // Allows at least two loops since some moves involving empty routes are not checked at the first loop
                 searchCompleted = true;
 
@@ -259,6 +356,91 @@ public class LocalSearchMgr : MonoBehaviour
                     }
                 }
             }
+            /*}
+            else
+            {
+                printInMove = true;
+
+                if (loopID > 1) // Allows at least two loops since some moves involving empty routes are not checked at the first loop
+                    searchCompleted = true;
+
+                //CLASSICAL ROUTE IMPROVEMENT(RI) MOVES SUBJECT TO A PROXIMITY RESTRICTION
+                for (int posU = 0; posU < CVRPMgr.inst.problem.customers; posU++)
+                {
+                    nodeU = clients[orderNodes[posU]];
+                    int lastTestRINodeU = nodeU.whenLastTestedRI;
+                    nodeU.whenLastTestedRI = nbMoves;
+                    for (int posV = 0; posV < (int)CVRPMgr.inst.correlatedVertices[nodeU.cour].Count; posV++)
+                    {
+                        nodeV = clients[CVRPMgr.inst.correlatedVertices[nodeU.cour][posV]];
+
+                        if (loopID == 0 || Mathf.Max(nodeU.route.whenLastModified, nodeV.route.whenLastModified) > lastTestRINodeU) // only evaluate moves involving routes that have been modified since last move evaluations for nodeU
+                        {
+                            // Randomizing the order of the neighborhoods within this loop does not matter much as we are already randomizing the order of the node pairs (and it's not very common to find improving moves of different types for the same node pair)
+                            SetLocalVariablesRouteU();
+                            SetLocalVariablesRouteV();
+                            if (Move1()) { PrintMove(1); continue; } // RELOCATE
+                            if (Move2()) { PrintMove(2); continue; } // RELOCATE
+                            if (Move3()) { PrintMove(3); continue; }// RELOCATE
+                            if (nodeUIndex <= nodeVIndex && Move4()) { PrintMove(4); continue; } // SWAP
+                            if (Move5()) { PrintMove(5); continue; }// SWAP
+                            if (nodeUIndex <= nodeVIndex && Move6()) { PrintMove(6); continue; }// SWAP
+                            if (intraRouteMove && Move7()) { PrintMove(7); continue; } // 2-OPT
+                            if (!intraRouteMove && Move8()) { PrintMove(8); continue; } // 2-OPT*
+                            if (!intraRouteMove && Move9()) { PrintMove(9); continue; } // 2-OPT*
+
+                            // Trying moves that insert nodeU directly after the depot
+                            if (nodeV.prev.isDepot)
+                            {
+                                nodeV = nodeV.prev;
+                                SetLocalVariablesRouteV();
+                                if (Move1()) { PrintMove(1); continue; } // RELOCATE
+                                if (Move2()) { PrintMove(2); continue; }// RELOCATE
+                                if (Move3()) { PrintMove(3); continue; }// RELOCATE
+                                if (!intraRouteMove && Move8()) { PrintMove(8); continue; }// 2-OPT*
+                                if (!intraRouteMove && Move9()) { PrintMove(9); continue; }// 2-OPT*
+                            }
+                        }
+                    }
+
+                    //MOVES INVOLVING AN EMPTY ROUTE-- NOT TESTED IN THE FIRST LOOP TO AVOID INCREASING TOO MUCH THE FLEET SIZE
+                    if (loopID > 0 && emptyRoutes.Count != 0)
+                    {
+                        nodeV = routes[emptyRoutes.First()].depot;
+                        SetLocalVariablesRouteU();
+                        SetLocalVariablesRouteV();
+                        if (Move1()) { PrintMove(1); continue; } // RELOCATE
+                        if (Move2()) { PrintMove(2); continue; } // RELOCATE
+                        if (Move3()) { PrintMove(3); continue; } // RELOCATE
+                        if (Move9()) { PrintMove(9); continue; } // 2-OPT*
+                    }
+                }
+
+                if (CVRPMgr.inst.ap.useSwapStar == true)
+                {
+                    //(SWAP*)MOVES LIMITED TO ROUTE PAIRS WHOSE CIRCLE SECTORS OVERLAP
+                    for (int rU = 0; rU < CVRPMgr.inst.problem.vehicles; rU++)
+                    {
+                        routeU = routes[orderRoutes[rU]];
+                        int lastTestSWAPStarRouteU = routeU.whenLastTestedSWAPStar;
+                        routeU.whenLastTestedSWAPStar = nbMoves;
+                        for (int rV = 0; rV < CVRPMgr.inst.problem.vehicles; rV++)
+                        {
+                            routeV = routes[orderRoutes[rV]];
+                            if (routeU.nbCustomers > 0 && routeV.nbCustomers > 0 && routeU.cour < routeV.cour
+                                && (loopID == 0 || Mathf.Max(routeU.whenLastModified, routeV.whenLastModified)
+                                    > lastTestSWAPStarRouteU))
+                                if (CircleSector.overlap(routeU.sector, routeV.sector))
+                                    SwapStar();
+                        }
+                    }
+                }
+
+                Debug.Log($"Loop {loopID}, Search Completed: {searchCompleted}");
+                loopID++;
+
+                
+            }*/    
         }
 
         ExportIndividual(indiv);
@@ -324,7 +506,7 @@ public class LocalSearchMgr : MonoBehaviour
                 - routeV.penalty;
         }
 
-        if (costSuppU + costSuppV > -float.Epsilon)
+        if (costSuppU + costSuppV > -0.00001f)
             return false;
         if (nodeUIndex == nodeYIndex)
             return false;
@@ -364,7 +546,7 @@ public class LocalSearchMgr : MonoBehaviour
                 - routeV.penalty;
         }
 
-        if (costSuppU + costSuppV > -float.Epsilon)
+        if (costSuppU + costSuppV > -0.00001f)
             return false;
         if (nodeU == nodeY || nodeV == nodeX || nodeX.isDepot)
             return false;
@@ -387,7 +569,7 @@ public class LocalSearchMgr : MonoBehaviour
             - matrix[nodeUIndex, nodeXIndex]
             - matrix[nodeXIndex, nodeXNextIndex];
 
-        float costSuppV = matrix[nodeVIndex, nodeUIndex]
+        float costSuppV = matrix[nodeVIndex, nodeXIndex]
             + matrix[nodeXIndex, nodeUIndex]
             + matrix[nodeUIndex, nodeYIndex]
             - matrix[nodeVIndex, nodeYIndex];
@@ -407,10 +589,13 @@ public class LocalSearchMgr : MonoBehaviour
                 - routeV.penalty;
         }
 
-        if (costSuppU + costSuppV > -float.Epsilon)
+        if (costSuppU + costSuppV > -0.00001f)
             return false;
         if (nodeU == nodeY || nodeV == nodeX || nodeX.isDepot)
             return false;
+
+        //Debug.Log(costSuppU + costSuppV);
+        //Debug.Log(intraRouteMove);
 
         InsertNode(nodeX, nodeV);
         InsertNode(nodeU, nodeX);
@@ -449,7 +634,7 @@ public class LocalSearchMgr : MonoBehaviour
                 - routeV.penalty;
         }
 
-        if (costSuppU + costSuppV > -float.Epsilon)
+        if (costSuppU + costSuppV > -0.00001f)
             return false;
         if (nodeUIndex == nodeVPrevIndex || nodeUIndex == nodeYIndex ||
             nodeU.isDepot || nodeV.isDepot)
@@ -492,7 +677,7 @@ public class LocalSearchMgr : MonoBehaviour
                 - routeV.penalty;
         }
 
-        if (costSuppU + costSuppV > -float.Epsilon)
+        if (costSuppU + costSuppV > -0.00001f)
             return false;
         if (nodeU == nodeV.prev || nodeX == nodeV.prev || nodeU == nodeY || 
             nodeX.isDepot || nodeU.isDepot || nodeY.isDepot)
@@ -535,7 +720,7 @@ public class LocalSearchMgr : MonoBehaviour
                 - routeV.penalty;
         }
 
-        if (costSuppU + costSuppV > -float.Epsilon) return false;
+        if (costSuppU + costSuppV > -0.00001f) return false;
         if (nodeX.isDepot || nodeY.isDepot || nodeU.isDepot || nodeV.isDepot
             || nodeY == nodeU.prev || nodeU == nodeY || nodeX == nodeV || nodeV == nodeX.next) return false;
 
@@ -560,7 +745,7 @@ public class LocalSearchMgr : MonoBehaviour
             + nodeV.cumulatedReversalDistance
             - nodeX.cumulatedReversalDistance;
 
-        if (cost > -float.Epsilon) return false;
+        if (cost > -0.00001f) return false;
         if (nodeU.next == nodeV) return false;
 
         Node nodeNum = nodeX.next;
@@ -606,6 +791,9 @@ public class LocalSearchMgr : MonoBehaviour
             + nodeV.cumulatedReversalDistance + routeU.reversalDistance
             - nodeX.cumulatedReversalDistance - routeU.penalty - routeV.penalty;
 
+
+        float prePrune = cost;
+
         // Early move pruning to save CPU time. Guarantees that this move cannot improve without checking additional (load, duration...) constraints
         if (cost >= 0) return false;
 
@@ -615,7 +803,10 @@ public class LocalSearchMgr : MonoBehaviour
             + PenaltyExcessLoad(nodeU.cumulatedLoad + nodeV.cumulatedLoad)
             + PenaltyExcessLoad(routeU.load + routeV.load - nodeU.cumulatedLoad - nodeV.cumulatedLoad);
 
-        if (cost > float.Epsilon) return false;
+        if (cost > -0.00001f) return false;
+
+        if(printInMove)
+            Debug.Log($"Pre-prune = {prePrune} Cost = {cost}");
 
         Node depotU = routeU.depot;
         Node depotV = routeV.depot;
@@ -697,6 +888,10 @@ public class LocalSearchMgr : MonoBehaviour
             - matrix[nodeUIndex, nodeXIndex] - matrix[nodeVIndex, nodeYIndex]
             - routeU.penalty - routeV.penalty;
 
+        cost = matrix[nodeUIndex, nodeYIndex] + matrix[nodeVIndex, nodeXIndex] 
+            - matrix[nodeUIndex, nodeXIndex] - matrix[nodeVIndex,nodeYIndex]
+            - routeU.penalty - routeV.penalty;
+
         // Early move pruning to save CPU time. Guarantees that this move cannot improve without checking additional (load, duration...) constraints
         if (cost >= 0) return false;
 
@@ -705,7 +900,7 @@ public class LocalSearchMgr : MonoBehaviour
             + PenaltyExcessLoad(nodeU.cumulatedLoad + routeV.load - nodeV.cumulatedLoad)
             + PenaltyExcessLoad(nodeV.cumulatedLoad + routeU.load - nodeU.cumulatedLoad);
 
-        if (cost > -float.Epsilon) return false;
+        if (cost > -0.00001f) return false;
 
         Node depotU = routeU.depot;
         Node depotV = routeV.depot;
@@ -845,7 +1040,7 @@ public class LocalSearchMgr : MonoBehaviour
                 myBestSwapStar = mySwapStar;
         }
 
-        if (myBestSwapStar.moveCost > -float.Epsilon) return false;
+        if (myBestSwapStar.moveCost > -0.00001f) return false;
 
         // Applying the best move in case of improvement
         if (myBestSwapStar.bestPositionU != null) InsertNode(myBestSwapStar.U, myBestSwapStar.bestPositionU);
@@ -1156,75 +1351,102 @@ public class LocalSearchMgr : MonoBehaviour
     {
         InitValues();
 
-        /*
-        testRoutes = new List<List<int>> {
-            new List<int> { 32, 31, 35 },
-            new List<int> { 53, 73, 95, 24, 46},
-            new List<int> { 75, 93, 33 },
-            new List<int> { 15, 22, 41, 20 },
-            new List<int> { 1, 70, 54 },
-            new List<int> { 92, 9, 86 },
-            new List<int> { 68, 90, 84, 66 },
-            new List<int> { 76, 55, 16, 69 },
-            new List<int> { 4, 13, 74 },
-            new List<int> { 58, 12, 5 },
-            new List<int> { 18, 10, 39 },
-            new List<int> { 25, 65, 78, 42, 28 },
-            new List<int> { 7, 2, 45, 43, 29, 36, 72, 57 },
-            new List<int> { 87, 37, 6, 49, 14 },
-            new List<int> { 3, 77, 63 },
-            new List<int> { 44, 67, 88, 40 },
-            new List<int> { 82, 60, 59 },
-            new List<int> { 8, 17 },
-            new List<int> { 34, 64, 96, 48, 26, 47, 38 },
-            new List<int> { 80, 94, 56, 21 },
-            new List<int> { 71, 62, 99, 98, 89 },
-            new List<int> { 100, 61, 23 },
-            new List<int> { 19, 97, 27 },
-            new List<int> { 81, 51, 83 },
-            new List<int> { 50, 91, 52 },
-            new List<int> { 30, 85, 11, 79 }
-        };
-        */
-        
-        /*
-        List<int> route1 = new List<int> { 17, 21, 18, 13, 11, 12 };
-        List<int> route2 = new List<int> { 16, 19, 20, 14 };
-        List<int> route3 = new List<int> { 15, 4, 2, 5, 10 };
-        List<int> route4 = new List<int> { 9, 7, 3, 1, 6, 8 };
-        */
-
-        /*
-        List<int> route1 = new List<int> { 16, 17, 4, 5, 7, 3 };
-        List<int> route2 = new List<int> { 15, 11, 10, 13, 20 };
-        List<int> route3 = new List<int> { 2, 9, 21, 19, 18, 6, 8 };
-        List<int> route4 = new List<int> { 14, 1, 12 };
-        */
-
-        Individual indiv = new Individual();
-        SplitMgr.inst.GeneralSplit(indiv, CVRPMgr.inst.problem.vehicles);
-        /*
-        List<List<int>> groupedData = new List<List<int>>()
+        Individual randomIndiv = new Individual();
+        randomIndiv.chromR =  new List<List<int>>
         {
-            new List<int> { 15, 21, 20, 17 },
-            new List<int> { 14, 18, 12, 8, 4, 10, 6 , 9, 7},
-            new List<int> { 5, 2 ,3, 19 },
-            new List<int> { 1, 13, 11, 16 }
+            new List<int> { 25, 23, 22, 26, 19, 20, 21, 9 },
+            new List<int> { 8, 43, 44, 30, 41, 40, 39, 42, 38, 37, 2, 16, 1, 15 },
+            new List<int> { 36, 34, 31, 32, 33, 28, 29, 27, 6, 5, 7, 35, 3, 4, 14, 13, 12, 11, 18, 17, 10 },
+            new List<int> { 24 }
         };
-        */
 
-        //indiv.chromR = groupedData;
+        orderNodes = new List<int> { 34, 3, 25, 30, 27, 11, 38, 29, 42, 7, 24, 13, 28, 36, 23, 12, 40, 6, 16, 10, 9, 14, 33, 15, 17, 21, 1, 41, 20, 26, 2, 44, 18, 5, 32, 37, 35, 43, 31, 22, 19, 4, 39, 8 };
+        orderRoutes = new List<int> { 2, 3, 1, 0 };
+        /*
+        CVRPMgr.inst.correlatedVertices = new List<List<int>>
+        {
+            new List<int> {40,16,42,24,14,21,36,18,10,11,39,2,9,44,43,15,22,13,41,20,17,8,23,26,19,38,25,37,12},
+            new List<int> {38,22,42,26,16,23,10,18,40,15,44,36,8,14,25,12,1,11,20,17,9,43,13,24,21,39,19,37},
+            new List<int> {12,39,32,13,29,36,27,38,42,33,31,4,14,30,43,40,35,41,5,6,7,37,34},
+            new List<int> {27,29,40,37,31,30,3,13,42,34,33,39,7,41,5,43,38,12,36,32,35,6,14},
+            new List<int> {35,33,34,38,3,28,31,29,32,36,42,37,6,40,43,27,39,30,41,4,7},
+            new List<int> {41,35,27,4,43,34,30,38,29,7,31,32,42,3,5,36,39,40,28,37,33},
+            new List<int> {32,29,6,35,33,36,34,27,43,39,42,41,30,37,31,5,4,38,3,28,40},
+            new List<int> {22,44,2,26,19,39,43,38,20,9,25,16,37,28,42,10,15,41,24,1,21,30,17,36,18,23},
+            new List<int> {41,22,26,21,24,38,30,40,10,43,15,42,25,11,1,23,12,39,37,14,36,19,2,8,17,18,16,20,44,13},
+            new List<int> {13,1,21,19,23,37,8,36,14,9,38,15,12,24,20,2,11,26,22,16,25,18,17},
+            new List<int> {36,38,37,19,15,1,20,18,12,17,25,10,24,2,42,14,9,16,21,13},
+            new List<int> {36,17,1,24,37,4,21,16,11,9,2,18,20,10,3,42,38,13,15,14},
+            new List<int> {12,42,4,14,2,3,38,11,18,16,36,10,20,15,24,9,37,1,21,17},
+            new List<int> {4,38,13,24,21,10,36,17,16,20,11,37,12,15,2,1,3,18,42,9},
+            new List<int> {44,9,38,17,2,21,20,25,14,10,19,42,11,39,12,36,23,37,24,22,8,13,18,16,43,26,1},
+            new List<int> {15,8,22,12,19,17,43,25,18,37,11,20,26,38,42,23,13,24,9,44,14,36,2,1,21,10},
+            new List<int> {1,15,20,24,38,18,26,25,11,2,36,22,12,19,21,10,37,23,8,9,14,16,13},
+            new List<int> {13,36,12,20,10,17,19,25,1,14,15,11,22,21,23,2,37,16,38,26,24,8,9},
+            new List<int> {26,9,10,21,44,16,15,43,22,17,20,18,38,11,25,2,23,24,1,8,37},
+            new List<int> {37,43,17,12,2,26,38,8,44,14,21,16,15,11,19,25,10,23,9,18,1,22,36,13,42,24,39},
+            new List<int> {36,11,2,9,22,16,17,20,38,23,8,43,19,13,26,15,24,44,39,37,18,25,42,12,10,14,1},
+            new List<int> {15,23,8,25,37,2,20,17,26,38,19,21,16,18,44,24,43,10,9,1},
+            new List<int> {17,43,37,15,1,16,19,44,18,22,10,8,26,2,38,20,9,21,25,24},
+            new List<int> {18,12,26,2,42,14,37,21,20,16,1,8,39,22,11,44,15,13,25,10,9,38,17,19,23,43,36},
+            new List<int> {19,10,8,11,44,20,2,23,1,16,17,37,9,15,38,24,26,43,21,22,18},
+            new List<int> {44,1,20,15,2,18,19,38,17,37,24,43,25,23,21,22,9,8,10,16},
+            new List<int> {41,28,34,7,5,42,30,35,43,3,6,38,32,39,37,33,40,36,31,4,29},
+            new List<int> {33,6,43,35,27,7,32,38,29,42,34,40,39,30,5,36,8,41,31,44},
+            new List<int> {41,5,39,6,36,3,35,30,4,43,34,7,44,28,27,38,32,42,33,31,40},
+            new List<int> {5,36,8,38,9,37,28,41,34,40,44,42,31,27,33,43,32,3,7,39,4,6,29,35},
+            new List<int> {4,3,30,5,27,42,29,35,37,32,36,38,33,43,28,6,41,34,7,39,44,40},
+            new List<int> {30,36,27,7,28,37,35,5,44,42,33,6,34,39,29,31,4,38,41,3,43,40},
+            new List<int> {39,42,5,32,27,43,6,4,3,34,36,7,29,40,30,31,44,35,38,28,41},
+            new List<int> {30,43,37,6,29,39,33,5,38,7,41,28,32,3,27,35,4,31,40,42,44,36},
+            new List<int> {27,36,6,30,40,41,39,28,34,38,31,33,4,37,5,43,32,7,42,3,29},
+            new List<int> {29,16,38,42,8,6,3,40,21,32,35,11,4,28,9,37,15,17,31,27,41,44,33,43,39,12,20,7,13,30,34,10,2,1,14,24,5,18},
+            new List<int> {13,34,21,9,22,14,41,42,40,20,38,19,12,27,1,44,18,5,26,2,35,6,25,7,4,10,3,23,36,8,15,24,11,31,16,39,17,30,43,32},
+            new List<int> {41,40,14,29,11,30,44,13,27,17,25,24,2,35,37,34,20,32,36,15,26,7,16,18,3,22,39,31,1,19,23,8,10,28,5,43,6,4,21,12,9,42,33},
+            new List<int> {42,33,38,4,5,34,20,21,40,35,29,24,30,37,31,8,36,7,3,27,44,28,6,41,1,15,32,2,9,43},
+            new List<int> {37,9,5,38,32,34,4,3,29,33,2,27,6,42,30,44,43,28,7,35,31,1,36,41,39},
+            new List<int> {31,38,42,6,30,8,34,33,5,1,44,40,7,28,29,39,36,32,27,9,3,35,43,4,37},
+            new List<int> {39,38,35,32,20,41,33,1,4,9,31,36,40,2,16,34,30,7,11,5,27,24,43,3,28,37,21,44,13,12,6,14,8,29,15},
+            new List<int> {40,31,44,5,38,33,30,22,25,26,32,7,27,24,15,29,23,41,16,9,1,42,6,34,35,36,28,19,4,8,37,21,39,2,20,3},
+            new List<int> {34,2,20,1,24,37,16,19,38,39,40,8,15,29,26,22,9,33,25,41,21,42,32,23,43,36,30,28,31}
+        };*/
 
-        LoadIndividual(indiv);
-        ExportIndividual(indiv);
+        penaltyCapacityLS = CVRPMgr.inst.penaltyCapacity;
+        penaltyDurationLS = CVRPMgr.inst.penaltyDuration;
+        LoadIndividual(randomIndiv);
 
-        Debug.Log(indiv.eval.penalizedCost);
-        Debug.Log(indiv.eval.distance);
+        /*// Shuffling the order of the nodes explored by the LS to allow for more diversity in the search
+        for (int i = orderNodes.Count - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            int temp = orderNodes[i];
+            orderNodes[i] = orderNodes[j];
+            orderNodes[j] = temp;
+        }
+        for (int i = orderRoutes.Count - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            int temp = orderRoutes[i];
+            orderRoutes[i] = orderRoutes[j];
+            orderRoutes[j] = temp;
+        }
+        for (int i = 1; i <= CVRPMgr.inst.problem.customers; i++)
+        {
+            if (Random.Range(0, CVRPMgr.inst.ap.nbGranular) == 0) // O(n/nbGranular) calls to the inner function on average, to achieve linear-time complexity overall
+            {
+                for (int k = CVRPMgr.inst.correlatedVertices[i].Count - 1; k > 0; k--)
+                {
+                    int j = Random.Range(0, k + 1);
+                    int temp = CVRPMgr.inst.correlatedVertices[i][k];
+                    CVRPMgr.inst.correlatedVertices[i][k] = CVRPMgr.inst.correlatedVertices[i][j];
+                    CVRPMgr.inst.correlatedVertices[i][j] = temp;
+                }
+            }
+        }*/
 
-        foreach (List<int> route in indiv.chromR)
-            Debug.Log(BasicsChecking.PrintList(route));
+        loopID = 0;
 
-        Run(indiv, CVRPMgr.inst.penaltyCapacity, CVRPMgr.inst.penaltyDuration);
+        searchCompleted = false;
     }
 
     void CheckRoutes()
