@@ -1,4 +1,4 @@
-using System.Collections;
+/*using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -24,18 +24,18 @@ public class Genetic : MonoBehaviour
 
     void run()
     {
-        /* INITIAL Population.inst */
+        *//* INITIAL Population.inst *//*
         Population.inst.generatePopulation();
 
         int nbIter;
         int nbIterNonProd = 1;
         if (Parameters.inst.verbose) Debug.Log("----- STARTING GENETIC ALGORITHM");
-        for (nbIter = 0; nbIterNonProd <= Parameters.inst.ap.nbIter /*&& (Parameters.inst.ap.timeLimit == 0 || (double)(clock() -Parameters.inst.startTime)/ (double)CLOCKS_PER_SEC < Parameters.inst.ap.timeLimit)*/ ; nbIter++)
+        for (nbIter = 0; nbIterNonProd <= Parameters.inst.ap.nbIter *//*&& (Parameters.inst.ap.timeLimit == 0 || (double)(clock() -Parameters.inst.startTime)/ (double)CLOCKS_PER_SEC < Parameters.inst.ap.timeLimit)*//* ; nbIter++)
 	    {
-            /* SELECTION AND CROSSOVER */
+            *//* SELECTION AND CROSSOVER *//*
             crossoverOX(offspring, Population.inst.getBinaryTournament(), Population.inst.getBinaryTournament());
 
-            /* LOCAL SEARCH */
+            *//* LOCAL SEARCH *//*
             LocalSearch.inst.run(offspring, Parameters.inst.penaltyCapacity, Parameters.inst.penaltyDuration);
             bool isNewBest = Population.inst.addIndividual(offspring, true);
             if (!offspring.eval.isFeasible && Random.Range(0,10) % 2 == 0) // Repair half of the solutions in case of infeasibility
@@ -44,11 +44,11 @@ public class Genetic : MonoBehaviour
                 if (offspring.eval.isFeasible) isNewBest = (Population.inst.addIndividual(offspring, false) || isNewBest);
             }
 
-            /* TRACKING THE NUMBER OF ITERATIONS SINCE LAST SOLUTION IMPROVEMENT */
+            *//* TRACKING THE NUMBER OF ITERATIONS SINCE LAST SOLUTION IMPROVEMENT *//*
             if (isNewBest) nbIterNonProd = 1;
             else nbIterNonProd++;
 
-            /* DIVERSIFICATION, PENALTY MANAGEMENT AND TRACES 
+            *//* DIVERSIFICATION, PENALTY MANAGEMENT AND TRACES 
             if (nbIter % Parameters.inst.ap.nbIterPenaltyManagement == 0) Population.inst.managePenalties();
             if (nbIter % Parameters.inst.ap.nbIterTraces == 0) Population.inst.printState(nbIter, nbIterNonProd);
             */
@@ -59,7 +59,7 @@ public class Genetic : MonoBehaviour
                 Population.inst.restart();
                 nbIterNonProd = 1;
             }
-            */
+            *//*
         }
         //if (Parameters.inst.verbose) Debug.Log("----- GENETIC ALGORITHM FINISHED AFTER " << nbIter << " ITERATIONS. TIME SPENT: " << (double)(clock() - Parameters.inst.startTime) / (double)CLOCKS_PER_SEC << std::endl;
     }
@@ -102,3 +102,4 @@ public class Genetic : MonoBehaviour
 
 
 }
+*/

@@ -1,4 +1,4 @@
-using System;
+/*using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor.Search;
@@ -11,7 +11,7 @@ public class Split : MonoBehaviour
     // Problem parameters
     int maxVehicles;
 
-    /* Auxiliary data structures to run the Linear Split algorithm */
+    *//* Auxiliary data structures to run the Linear Split algorithm *//*
     List<ClientSplit> cliSplit;
     List<List<float>> potential;  // Potential vector
     List<List<int>> pred;  // Indice of the predecessor in an optimal path
@@ -266,3 +266,4 @@ public class Split : MonoBehaviour
         return (end == 0);
     }
 }
+*/

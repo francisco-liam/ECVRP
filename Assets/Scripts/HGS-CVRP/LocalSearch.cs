@@ -1,4 +1,4 @@
-using System;
+/*using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -67,14 +67,14 @@ public class LocalSearch : MonoBehaviour
     SortedSet<int> emptyRoutes;              // indices of all empty routes
     int loopID;                                 // Current loop index
 
-    /* THE SOLUTION IS REPRESENTED AS A LINKED LIST OF ELEMENTS */
+    *//* THE SOLUTION IS REPRESENTED AS A LINKED LIST OF ELEMENTS *//*
     List<Node> clients;              // Elements representing clients (clients[0] is a sentinel and should not be accessed)
     List<Node> depots;               // Elements representing depots
     List<Node> depotsEnd;                // Duplicate of the depots to mark the end of the routes
     List<Route> routes;              // Elements representing routes
     List<List<ThreeBestInsert>> bestInsertClient;   // (SWAP*) For each route and node, storing the cheapest insertion cost 
 
-    /* TEMPORARY VARIABLES USED IN THE LOCAL SEARCH LOOPS */
+    *//* TEMPORARY VARIABLES USED IN THE LOCAL SEARCH LOOPS *//*
     // nodeUPrev . nodeU . nodeX . nodeXNext
     // nodeVPrev . nodeV . nodeY . nodeYNext
     Node nodeU;
@@ -134,7 +134,7 @@ public class LocalSearch : MonoBehaviour
             if (loopID > 1) // Allows at least two loops since some moves involving empty routes are not checked at the first loop
                 searchCompleted = true;
 
-            /* CLASSICAL ROUTE IMPROVEMENT (RI) MOVES SUBJECT TO A PROXIMITY RESTRICTION */
+            *//* CLASSICAL ROUTE IMPROVEMENT (RI) MOVES SUBJECT TO A PROXIMITY RESTRICTION *//*
             for (int posU = 0; posU < Parameters.inst.nbClients; posU++)
 		    {
                 nodeU = clients[orderNodes[posU]];
@@ -172,7 +172,7 @@ public class LocalSearch : MonoBehaviour
                     }
                 }
 
-                /* MOVES INVOLVING AN EMPTY ROUTE -- NOT TESTED IN THE FIRST LOOP TO AVOID INCREASING TOO MUCH THE FLEET SIZE */
+                *//* MOVES INVOLVING AN EMPTY ROUTE -- NOT TESTED IN THE FIRST LOOP TO AVOID INCREASING TOO MUCH THE FLEET SIZE *//*
                 if (loopID > 0 && emptyRoutes.Count != 0)
                 {
                     nodeV = routes[emptyRoutes.Min].depot;
@@ -187,7 +187,7 @@ public class LocalSearch : MonoBehaviour
 
             if (Parameters.inst.ap.useSwapStar == true && Parameters.inst.areCoordinatesProvided)
 		    {
-                /* (SWAP*) MOVES LIMITED TO ROUTE PAIRS WHOSE CIRCLE SECTORS OVERLAP */
+                *//* (SWAP*) MOVES LIMITED TO ROUTE PAIRS WHOSE CIRCLE SECTORS OVERLAP *//*
                 for (int rU = 0; rU < Parameters.inst.nbVehicles; rU++)
 			    {
                     routeU = routes[orderRoutes[rU]];
@@ -936,3 +936,4 @@ public class LocalSearch : MonoBehaviour
     }
 
 }
+*/

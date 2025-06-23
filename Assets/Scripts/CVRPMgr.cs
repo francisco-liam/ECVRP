@@ -4,48 +4,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
-public class AlgorithmParameters {
-
-    public int nbGranular;         // Granular search parameter, limits the number of moves in the RI local search
-    public int mu;                 // Minimum population size
-    public int lambda;             // Number of solutions created before reaching the maximum population size (i.e., generation size)
-    public int nbElite;            // Number of elite individuals
-    public int nbClose;            // Number of closest solutions/individuals considered when calculating diversity contribution
-
-    public int nbIterPenaltyManagement;  // Number of iterations between penalty updates
-    public float targetFeasible;        // Reference proportion for the number of feasible individuals, used for the adaptation of the penalty parameters
-    public float penaltyDecrease;       // Multiplier used to decrease penalty parameters if there are sufficient feasible individuals
-    public float penaltyIncrease;       // Multiplier used to increase penalty parameters if there are insufficient feasible individuals
-
-    public int seed;               // Random seed. Default value: 0
-    public int nbIter;             // Nb iterations without improvement until termination (or restart if a time limit is specified). Default value: 20,000 iterations
-    public int nbIterTraces;       // Number of iterations between traces display during HGS execution
-    public float timeLimit;       // CPU time limit until termination in seconds. Default value: 0 (i.e., inactive)
-    public bool useSwapStar;		// Use SWAP* local search or not. Default value: 1. Only available when coordinates are provided.
-    public bool useSetNbOfIter;
-
-    public AlgorithmParameters()
-    {
-        nbGranular = 20;
-        mu = 25;
-        lambda = 40;
-        nbElite = 4;
-        nbClose = 5;
-
-        nbIterPenaltyManagement = 100;
-        targetFeasible = 0.2f;
-        penaltyDecrease = 0.85f;
-        penaltyIncrease = 1.2f;
-
-        seed = 0;
-        nbIter = 20000;
-        nbIterTraces = 500;
-        timeLimit = 0;
-        useSwapStar = true;
-    }
-}
-
-[System.Serializable]
 public class CVRPNode
 {
     public int nodeNumber;

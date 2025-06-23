@@ -1,4 +1,4 @@
-using System;
+/*using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,7 +32,7 @@ public class Population : MonoBehaviour
     public void generatePopulation()
     {
         if (Parameters.inst.verbose) Debug.Log("----- BUILDING INITIAL POPULATION");
-        for (int i = 0; i < 4 * Parameters.inst.ap.mu /*&& (i == 0 || Parameters.inst.ap.timeLimit == 0 || (double) (clock() - Parameters.inst.startTime) / (double) CLOCKS_PER_SEC< Parameters.inst.ap.timeLimit)*/; i++)
+        for (int i = 0; i < 4 * Parameters.inst.ap.mu *//*&& (i == 0 || Parameters.inst.ap.timeLimit == 0 || (double) (clock() - Parameters.inst.startTime) / (double) CLOCKS_PER_SEC< Parameters.inst.ap.timeLimit)*//*; i++)
         {
             HGSCVRPIndividual randomIndiv = new HGSCVRPIndividual();
             Split.inst.generalSplit(randomIndiv, Parameters.inst.nbVehicles);
@@ -199,3 +199,4 @@ public class Population : MonoBehaviour
         return maxSize > 0 ? result / maxSize : 0;
     }
 }
+*/

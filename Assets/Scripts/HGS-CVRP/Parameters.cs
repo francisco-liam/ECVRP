@@ -2,16 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[System.Serializable]
-public class Client
-{
-    public float coordX;          // Coordinate X
-    public float coordY;          // Coordinate Y
-    public float serviceDuration; // Service duration
-    public float demand;          // Demand
-    public int polarAngle;			// Polar angle of the client around the depot, measured in degrees and truncated for convenience
-};
-
 public class Parameters : MonoBehaviour
 {
     public static Parameters inst;
