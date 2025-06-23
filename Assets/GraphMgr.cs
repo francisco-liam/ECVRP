@@ -15,6 +15,7 @@ public class GraphMgr : MonoBehaviour
     public List<GraphNode> nodes;
     public List<GameObject> edges;
 
+    public bool debug;
     private void Awake()
     {
         inst = this;
@@ -34,7 +35,7 @@ public class GraphMgr : MonoBehaviour
         mouseWorldPos = Camera.main.ScreenToWorldPoint(mouseWorldPos);
         RaycastHit2D hit = Physics2D.Raycast(mouseWorldPos, Vector2.zero);
 
-        if (hit.collider != null && hit.collider.gameObject.CompareTag("Edge"))
+        if (debug && hit.collider != null && hit.collider.gameObject.CompareTag("Edge"))
         {
             Debug.Log($"Mouse is over a line! Name :{hit.collider.gameObject.name}");
         }

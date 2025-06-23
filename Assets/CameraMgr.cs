@@ -18,7 +18,7 @@ public class CameraMgr : MonoBehaviour
     void Update()
     {
         float scroll = Input.mouseScrollDelta.y;
-        float zValue = Mathf.Clamp(Camera.main.transform.position.z + scroll * zoomSpeed, -140, -60);
+        float zValue = Mathf.Clamp(Camera.main.transform.position.z + scroll * zoomSpeed, -500, -60);
         cameraTransform.position = new Vector3(cameraTransform.position.x, cameraTransform.position.y, zValue);
 
         // While holding middle mouse

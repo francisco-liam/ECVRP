@@ -27,7 +27,7 @@ public class CVRPMain : MonoBehaviour
         SplitMgr.inst.InitValues();
         PopulationMgr.inst.InitValues();
         GeneticMgr.inst.Init();
-        //LocalSearchMgr.inst.Init();
+        LocalSearchMgr.inst.Init();
         run = 0;
     }
 

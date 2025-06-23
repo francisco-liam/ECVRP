@@ -130,8 +130,10 @@ public class DataMgr : MonoBehaviour
 
         while (line != null)
         {
+            
             line = line.Trim();
             coordString = line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            Debug.Log(line);
 
             if (coordString[0] == "NODE_COORD_SECTION" || coordString[0] == "DEMAND_SECTION" || coordString[0] == "DEPOT_SECTION" || coordString[0] == "EOF")
             {
