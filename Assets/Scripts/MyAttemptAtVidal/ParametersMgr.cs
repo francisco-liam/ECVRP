@@ -58,6 +58,8 @@ public class Client
 
 public class ParametersMgr : MonoBehaviour
 {
+    public static ParametersMgr inst;
+
     /* PARAMETERS OF THE GENETIC ALGORITHM */
     public bool verbose;                       // Controls verbose level through the iterations
     public AlgorithmParameters ap = new AlgorithmParameters();             // Main parameters of the HGS algorithm
@@ -85,6 +87,11 @@ public class ParametersMgr : MonoBehaviour
     public double[][] timeCost;  // Distance matrix
     public List<List<int>> correlatedVertices;   // Neighborhood restrictions: For each client, list of nearby customers
     public bool areCoordinatesProvided;                            // Check if valid coordinates are provided
+
+    private void Awake()
+    {
+        inst = this;
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -122,6 +129,7 @@ public class ParametersMgr : MonoBehaviour
         cli = new List<Client>();
         for (int i = 0; i <= nbClients; i++)
         {
+            cli.Add(new Client());
             // If useSwapStar==false, x_coords and y_coords may be empty.
             if (ap.useSwapStar == true && areCoordinatesProvided)
             {
@@ -169,7 +177,7 @@ public class ParametersMgr : MonoBehaviour
         correlatedVertices = new List<List<int>>();
         List<HashSet<int>> setCorrelatedVertices = new List<HashSet<int>>();
         List<Tuple<double, int>> orderProximity = new List<Tuple<double, int>>();
-        for (int i = 0; i < nbVehicles + 1; i++)
+        for (int i = 0; i < nbClients + 1; i++)
         {
             correlatedVertices.Add(new List<int>());
             setCorrelatedVertices.Add(new HashSet<int>());
@@ -182,10 +190,11 @@ public class ParametersMgr : MonoBehaviour
                 if (i != j) orderProximity.Add(new Tuple<double, int>(timeCost[i][j], j));
             orderProximity.Sort();
 
-            for (int j = 0; j < Mathf.Min(ap.nbGranular, nbClients - 1); j++)
+            for (int j = 0; j < Math.Min(ap.nbGranular, nbClients - 1); j++)
             {
                 setCorrelatedVertices[i].Add(orderProximity[j].Item2);
                 setCorrelatedVertices[orderProximity[j].Item2].Add(i);
+                
             }
         }
 
@@ -193,6 +202,13 @@ public class ParametersMgr : MonoBehaviour
         for (int i = 1; i <= nbClients; i++)
             foreach (int x in setCorrelatedVertices[i])
                 correlatedVertices[i].Add(x);
+
+        // A reasonable scale for the initial values of the penalties
+        penaltyDuration = 1;
+        penaltyCapacity = Math.Max(0.1, Math.Min(1000, maxDist / maxDemand));
+
+        if (verbose)
+            Debug.Log($"----- INSTANCE SUCCESSFULLY LOADED WITH {nbClients} CLIENTS AND {nbVehicles} VEHICLES");
 
     }
 }

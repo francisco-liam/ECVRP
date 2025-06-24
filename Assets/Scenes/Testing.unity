@@ -139,7 +139,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &212785820
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -238,7 +238,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &308775423
 Transform:
   m_ObjectHideFlags: 0
@@ -252,11 +252,11 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1856752588}
   - {fileID: 1242541725}
   - {fileID: 1100029508}
   - {fileID: 323022841}
   - {fileID: 289980101}
+  - {fileID: 2086563835}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &323022839
@@ -367,7 +367,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &460809557
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -440,7 +440,8 @@ Transform:
   m_LocalPosition: {x: -1.649169, y: -1.8772453, z: 0.06368585}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1856752588}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &547476365
@@ -663,10 +664,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 686ebb9f3115a0040b931c75cf66c645, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  file: {fileID: 102900000, guid: 37f07224e0a978641a19b10306d2e525, type: 3}
+  file: {fileID: 102900000, guid: d3eae3b6b9ba67f42aca9553bfd807a7, type: 3}
   nbClients: 0
   vehicleCapacity: 1.7976931348623157e+308
-  durationLimit: 0
+  durationLimit: 1.7976931348623157e+308
   isDurationConstraint: 0
   isRoundingInteger: 1
   x_coords: []
@@ -741,7 +742,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1373761914
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -850,11 +851,11 @@ Transform:
   m_GameObject: {fileID: 1856752586}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -10.649169, y: -12.377245, z: 0.06368585}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 308775423}
+  m_Father: {fileID: 527545509}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1858629618
 GameObject:
@@ -872,7 +873,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1858629619
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1026,6 +1027,80 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2086563834
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2086563835}
+  - component: {fileID: 2086563836}
+  m_Layer: 0
+  m_Name: ParametersMgr
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2086563835
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2086563834}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 308775423}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2086563836
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2086563834}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fadcdfaa6b111ae41ad9310b747a8a91, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  verbose: 0
+  ap:
+    nbGranular: 20
+    mu: 25
+    lambda: 40
+    nbElite: 4
+    nbClose: 5
+    nbIterPenaltyManagement: 100
+    targetFeasible: 0.2
+    penaltyDecrease: 0.85
+    penaltyIncrease: 1.2
+    seed: 0
+    nbIter: 20000
+    nbIterTraces: 500
+    timeLimit: 0
+    useSwapStar: 1
+    useSetNbOfIter: 0
+  penaltyCapacity: 0
+  penaltyDuration: 0
+  startTime: 0
+  isDurationConstraint: 0
+  nbClients: 0
+  nbVehicles: 2147483647
+  durationLimit: 0
+  vehicleCapacity: 0
+  totalDemand: 0
+  maxDemand: 0
+  maxDist: 0
+  cli: []
+  areCoordinatesProvided: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -1034,9 +1109,9 @@ SceneRoots:
   - {fileID: 380060707}
   - {fileID: 527545509}
   - {fileID: 460809558}
+  - {fileID: 1114666311}
   - {fileID: 308775423}
   - {fileID: 212785821}
   - {fileID: 634676108}
   - {fileID: 1858629620}
   - {fileID: 1373761915}
-  - {fileID: 1114666311}

@@ -34,9 +34,9 @@ public class GeneticMgr : MonoBehaviour
     {
         if (running)//Input.GetKeyDown(KeyCode.Alpha1))
         {
-            bool condition = CVRPMgr.inst.ap.useSetNbOfIter ? nbIter < CVRPMgr.inst.ap.nbIter :
-                nbIterNonProd <= CVRPMgr.inst.ap.nbIter &&
-                (CVRPMgr.inst.ap.timeLimit == 0 || Time.realtimeSinceStartup - CVRPMgr.inst.startTime < CVRPMgr.inst.ap.timeLimit);
+            bool condition = ParametersMgr.inst.ap.useSetNbOfIter ? nbIter < ParametersMgr.inst.ap.nbIter :
+                nbIterNonProd <= ParametersMgr.inst.ap.nbIter &&
+                (ParametersMgr.inst.ap.timeLimit == 0 || Time.realtimeSinceStartup - ParametersMgr.inst.startTime < ParametersMgr.inst.ap.timeLimit);
 
             if (condition)
             {
@@ -47,11 +47,11 @@ public class GeneticMgr : MonoBehaviour
                 Individual offspring = CrossoverOX(PopulationMgr.inst.GetBinaryTournament(), PopulationMgr.inst.GetBinaryTournament());
 
                 /* LOCAL SEARCH */
-                LocalSearchMgr.inst.Run(offspring, CVRPMgr.inst.penaltyCapacity, CVRPMgr.inst.penaltyDuration);
+                LocalSearchMgr.inst.Run(offspring, ParametersMgr.inst.penaltyCapacity, ParametersMgr.inst.penaltyDuration);
                 bool isNewBest = PopulationMgr.inst.AddIndividual(offspring, true);
                 if (!offspring.eval.isFeasible && Random.Range(0, 2) % 2 == 0) // Repair half of the solutions in case of infeasibility
                 {
-                    LocalSearchMgr.inst.Run(offspring, CVRPMgr.inst.penaltyCapacity * 10, CVRPMgr.inst.penaltyDuration * 10); ;
+                    LocalSearchMgr.inst.Run(offspring, ParametersMgr.inst.penaltyCapacity * 10, ParametersMgr.inst.penaltyDuration * 10); ;
                     if (offspring.eval.isFeasible) isNewBest = (PopulationMgr.inst.AddIndividual(offspring, false) || isNewBest);
                 }
 
@@ -60,8 +60,8 @@ public class GeneticMgr : MonoBehaviour
                 else nbIterNonProd++;
 
                 /* DIVERSIFICATION, PENALTY MANAGEMENT AND TRACES */
-                if (nbIter % CVRPMgr.inst.ap.nbIterPenaltyManagement == 0) PopulationMgr.inst.ManagePenalties();
-                if (nbIter % CVRPMgr.inst.ap.nbIterTraces == 0) PopulationMgr.inst.PrintState(nbIter, nbIterNonProd);
+                if (nbIter % ParametersMgr.inst.ap.nbIterPenaltyManagement == 0) PopulationMgr.inst.ManagePenalties();
+                if (nbIter % ParametersMgr.inst.ap.nbIterTraces == 0) PopulationMgr.inst.PrintState(nbIter, nbIterNonProd);
 
                 /* FOR TESTS INVOLVING SUCCESSIVE RUNS UNTIL A TIME LIMIT: WE RESET THE ALGORITHM/POPULATION EACH TIME maxIterNonProd IS ATTAINED
                 if (params.ap.timeLimit != 0 && nbIterNonProd == params.ap.nbIter)
@@ -79,7 +79,7 @@ public class GeneticMgr : MonoBehaviour
                 Debug.Log(string.Format(
                     "----- GENETIC ALGORITHM FINISHED AFTER {0} ITERATIONS. TIME SPENT: {1:F2}",
                     nbIter,
-                    Time.realtimeSinceStartup - CVRPMgr.inst.startTime));
+                    Time.realtimeSinceStartup - ParametersMgr.inst.startTime));
 
                 if (write)
                 {
@@ -124,31 +124,31 @@ public class GeneticMgr : MonoBehaviour
         Individual result = new Individual();
         
         // Frequency table to track the customers which have been already inserted
-        bool[] freqClient = new bool[CVRPMgr.inst.problem.customers + 1];
+        bool[] freqClient = new bool[ParametersMgr.inst.nbClients + 1];
 
         // Picking the beginning and end of the crossover zone
-        int start = Random.Range(0, CVRPMgr.inst.problem.customers);
-        int end = Random.Range(0, CVRPMgr.inst.problem.customers);
+        int start = Random.Range(0, ParametersMgr.inst.nbClients);
+        int end = Random.Range(0, ParametersMgr.inst.nbClients);
 
         // Avoid that start and end coincide by accident
-        while (end == start) end = Random.Range(0, CVRPMgr.inst.problem.customers);
+        while (end == start) end = Random.Range(0, ParametersMgr.inst.nbClients);
 
         // Copy from start to end
         int j = start;
-        while (j % CVRPMgr.inst.problem.customers != (end + 1) % CVRPMgr.inst.problem.customers)
+        while (j % ParametersMgr.inst.nbClients != (end + 1) % ParametersMgr.inst.nbClients)
 	    {
-            result.chromT[j % CVRPMgr.inst.problem.customers] = parent1.chromT[j % CVRPMgr.inst.problem.customers];
-            freqClient[result.chromT[j % CVRPMgr.inst.problem.customers]] = true;
+            result.chromT[j % ParametersMgr.inst.nbClients] = parent1.chromT[j % ParametersMgr.inst.nbClients];
+            freqClient[result.chromT[j % ParametersMgr.inst.nbClients]] = true;
             j++;
         }
 
         // Fill the remaining elements in the order given by the second parent
-        for (int i = 1; i <= CVRPMgr.inst.problem.customers; i++)
+        for (int i = 1; i <= ParametersMgr.inst.nbClients; i++)
 	    {
-            int temp = parent2.chromT[(end + i) % CVRPMgr.inst.problem.customers];
+            int temp = parent2.chromT[(end + i) % ParametersMgr.inst.nbClients];
             if (freqClient[temp] == false)
             {
-                result.chromT[j % CVRPMgr.inst.problem.customers] = temp;
+                result.chromT[j % ParametersMgr.inst.nbClients] = temp;
                 j++;
             }
         }

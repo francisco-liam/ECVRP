@@ -64,10 +64,10 @@ public class Node
     public Node next;                     // Next node in the route order
     public Node prev;                     // Previous node in the route order
     public Route route;                       // Pointer towards the associated route
-    public float cumulatedLoad;               // Cumulated load on this route until the customer (including itself)
-    public float cumulatedTime;               // Cumulated time on this route until the customer (including itself)
-    public float cumulatedReversalDistance;   // Difference of cost if the segment of route (0...cour) is reversed (useful for 2-opt moves with asymmetric problems)
-    public float deltaRemoval;				// Difference of cost in the current route if the node is removed (used in SWAP*)
+    public double cumulatedLoad;               // Cumulated load on this route until the customer (including itself)
+    public double cumulatedTime;               // Cumulated time on this route until the customer (including itself)
+    public double cumulatedReversalDistance;   // Difference of cost if the segment of route (0...cour) is reversed (useful for 2-opt moves with asymmetric problems)
+    public double deltaRemoval;				// Difference of cost in the current route if the node is removed (used in SWAP*)
 };
 
 [System.Serializable]
@@ -79,11 +79,11 @@ public class Route
     public int whenLastModified;               // "When" this route has been last modified
     public int whenLastTestedSWAPStar;         // "When" the SWAP* moves for this route have been last tested
     public Node depot;                        // Pointer to the associated depot
-    public float duration;                    // Total time on the route
-    public float load;                        // Total load on the route
-    public float reversalDistance;            // Difference of cost if the route is reversed
-    public float penalty;                     // Current sum of load and duration penalties
-    public float polarAngleBarycenter;        // Polar angle of the barycenter of the route
+    public double duration;                    // Total time on the route
+    public double load;                        // Total load on the route
+    public double reversalDistance;            // Difference of cost if the route is reversed
+    public double penalty;                     // Current sum of load and duration penalties
+    public double polarAngleBarycenter;        // Polar angle of the barycenter of the route
     public CircleSector sector;				// Circle sector associated to the set of customers
 
     public Route()
@@ -95,7 +95,7 @@ public class Route
 // Structured used to keep track of the best SWAP* move
 public class SwapStarElement
 {
-    public float moveCost = 1e30f;
+    public double moveCost = 1e30f;
     public Node U = null;
     public Node bestPositionU = null;
     public Node V = null;
@@ -106,10 +106,10 @@ public class SwapStarElement
 public class ThreeBestInsert
 {
     public int whenLastCalculated;
-    public float[] bestCost = new float[3];
+    public double[] bestCost = new double[3];
     public Node[] bestLocation = new Node[3];
 
-    public void CompareAndAdd(float costInsert, Node placeInsert)
+    public void CompareAndAdd(double costInsert, Node placeInsert)
     {
         if (costInsert >= bestCost[2]) return;
         else if (costInsert >= bestCost[1])
@@ -170,13 +170,13 @@ public class LocalSearchMgr : MonoBehaviour
     Route routeV;
     int nodeUPrevIndex, nodeUIndex, nodeXIndex, nodeXNextIndex;
     int nodeVPrevIndex, nodeVIndex, nodeYIndex, nodeYNextIndex;
-    float loadU, loadX, loadV, loadY;
-    float serviceU, serviceX, serviceV, serviceY;
-    float penaltyCapacityLS, penaltyDurationLS;
+    double loadU, loadX, loadV, loadY;
+    double serviceU, serviceX, serviceV, serviceY;
+    double penaltyCapacityLS, penaltyDurationLS;
     bool intraRouteMove;
 
-    float[,] matrix;
-
+    double[][] matrix;
+    double MY_EPSILON = 0.00001;
     private void Awake()
     {
         inst = this;
@@ -201,14 +201,14 @@ public class LocalSearchMgr : MonoBehaviour
             else printInMove = false;
 
             //CLASSICAL ROUTE IMPROVEMENT(RI) MOVES SUBJECT TO A PROXIMITY RESTRICTION
-            for (int posU = 0; posU < CVRPMgr.inst.problem.customers; posU++)
+            for (int posU = 0; posU < ParametersMgr.inst.nbClients; posU++)
             {
                 nodeU = clients[orderNodes[posU]];
                 int lastTestRINodeU = nodeU.whenLastTestedRI;
                 nodeU.whenLastTestedRI = nbMoves;
-                for (int posV = 0; posV < (int)CVRPMgr.inst.correlatedVertices[nodeU.cour].Count; posV++)
+                for (int posV = 0; posV < (int)ParametersMgr.inst.correlatedVertices[nodeU.cour].Count; posV++)
                 {
-                    nodeV = clients[CVRPMgr.inst.correlatedVertices[nodeU.cour][posV]];
+                    nodeV = clients[ParametersMgr.inst.correlatedVertices[nodeU.cour][posV]];
 
                     if (loopID == 0 || Mathf.Max(nodeU.route.whenLastModified, nodeV.route.whenLastModified) > lastTestRINodeU) // only evaluate moves involving routes that have been modified since last move evaluations for nodeU
                     {
@@ -252,15 +252,15 @@ public class LocalSearchMgr : MonoBehaviour
                 }
             }
 
-            if (CVRPMgr.inst.ap.useSwapStar == true)
+            if (ParametersMgr.inst.ap.useSwapStar == true)
             {
                 //(SWAP*)MOVES LIMITED TO ROUTE PAIRS WHOSE CIRCLE SECTORS OVERLAP
-                for (int rU = 0; rU < CVRPMgr.inst.problem.vehicles; rU++)
+                for (int rU = 0; rU < ParametersMgr.inst.nbVehicles; rU++)
                 {
                     routeU = routes[orderRoutes[rU]];
                     int lastTestSWAPStarRouteU = routeU.whenLastTestedSWAPStar;
                     routeU.whenLastTestedSWAPStar = nbMoves;
-                    for (int rV = 0; rV < CVRPMgr.inst.problem.vehicles; rV++)
+                    for (int rV = 0; rV < ParametersMgr.inst.nbVehicles; rV++)
                     {
                         routeV = routes[orderRoutes[rV]];
                         if (routeU.nbCustomers > 0 && routeV.nbCustomers > 0 && routeU.cour < routeV.cour
@@ -287,7 +287,7 @@ public class LocalSearchMgr : MonoBehaviour
     }
 
     bool printInMove;
-    public void Run(Individual indiv, float penaltyCapacityLS, float penaltyDurationLS)
+    public void Run(Individual indiv, double penaltyCapacityLS, double penaltyDurationLS)
     {
         InitValues();
 
@@ -310,16 +310,16 @@ public class LocalSearchMgr : MonoBehaviour
             orderRoutes[i] = orderRoutes[j];
             orderRoutes[j] = temp;
         }
-        for (int i = 1; i <= CVRPMgr.inst.problem.customers; i++)
+        for (int i = 1; i <= ParametersMgr.inst.nbClients; i++)
         {
-            if (Random.Range(0, CVRPMgr.inst.ap.nbGranular) == 0) // O(n/nbGranular) calls to the inner function on average, to achieve linear-time complexity overall
+            if (Random.Range(0, ParametersMgr.inst.ap.nbGranular) == 0) // O(n/nbGranular) calls to the inner function on average, to achieve linear-time complexity overall
             {
-                for (int k = CVRPMgr.inst.correlatedVertices[i].Count - 1; k > 0; k--)
+                for (int k = ParametersMgr.inst.correlatedVertices[i].Count - 1; k > 0; k--)
                 {
                     int j = Random.Range(0, k + 1);
-                    int temp = CVRPMgr.inst.correlatedVertices[i][k];
-                    CVRPMgr.inst.correlatedVertices[i][k] = CVRPMgr.inst.correlatedVertices[i][j];
-                    CVRPMgr.inst.correlatedVertices[i][j] = temp;
+                    int temp = ParametersMgr.inst.correlatedVertices[i][k];
+                    ParametersMgr.inst.correlatedVertices[i][k] = ParametersMgr.inst.correlatedVertices[i][j];
+                    ParametersMgr.inst.correlatedVertices[i][j] = temp;
                 }
             }
         }
@@ -334,14 +334,14 @@ public class LocalSearchMgr : MonoBehaviour
                     searchCompleted = true;
 
                 /* CLASSICAL ROUTE IMPROVEMENT (RI) MOVES SUBJECT TO A PROXIMITY RESTRICTION */
-                for (int posU = 0; posU < CVRPMgr.inst.problem.customers; posU++)
+                for (int posU = 0; posU < ParametersMgr.inst.nbClients; posU++)
                 {
                     nodeU = clients[orderNodes[posU]];
                     int lastTestRINodeU = nodeU.whenLastTestedRI;
                     nodeU.whenLastTestedRI = nbMoves;
-                    for (int posV = 0; posV < (int)CVRPMgr.inst.correlatedVertices[nodeU.cour].Count; posV++)
+                    for (int posV = 0; posV < (int)ParametersMgr.inst.correlatedVertices[nodeU.cour].Count; posV++)
                     {
-                        nodeV = clients[CVRPMgr.inst.correlatedVertices[nodeU.cour][posV]];
+                        nodeV = clients[ParametersMgr.inst.correlatedVertices[nodeU.cour][posV]];
 
                         if (loopID == 0 || Mathf.Max(nodeU.route.whenLastModified, nodeV.route.whenLastModified) > lastTestRINodeU) // only evaluate moves involving routes that have been modified since last move evaluations for nodeU
                         {
@@ -385,15 +385,15 @@ public class LocalSearchMgr : MonoBehaviour
                     }
                 }
 
-                if (CVRPMgr.inst.ap.useSwapStar == true)
+                if (ParametersMgr.inst.ap.useSwapStar == true)
                 {
                     /* (SWAP*) MOVES LIMITED TO ROUTE PAIRS WHOSE CIRCLE SECTORS OVERLAP */
-                    for (int rU = 0; rU < CVRPMgr.inst.problem.vehicles; rU++)
+                    for (int rU = 0; rU < ParametersMgr.inst.nbVehicles; rU++)
                     {
                         routeU = routes[orderRoutes[rU]];
                         int lastTestSWAPStarRouteU = routeU.whenLastTestedSWAPStar;
                         routeU.whenLastTestedSWAPStar = nbMoves;
-                        for (int rV = 0; rV < CVRPMgr.inst.problem.vehicles; rV++)
+                        for (int rV = 0; rV < ParametersMgr.inst.nbVehicles; rV++)
                         {
                             routeV = routes[orderRoutes[rV]];
                             if (routeU.nbCustomers > 0 && routeV.nbCustomers > 0 && routeU.cour < routeV.cour
@@ -413,14 +413,14 @@ public class LocalSearchMgr : MonoBehaviour
                     searchCompleted = true;
 
                 //CLASSICAL ROUTE IMPROVEMENT(RI) MOVES SUBJECT TO A PROXIMITY RESTRICTION
-                for (int posU = 0; posU < CVRPMgr.inst.problem.customers; posU++)
+                for (int posU = 0; posU < ParametersMgr.inst.nbClients; posU++)
                 {
                     nodeU = clients[orderNodes[posU]];
                     int lastTestRINodeU = nodeU.whenLastTestedRI;
                     nodeU.whenLastTestedRI = nbMoves;
-                    for (int posV = 0; posV < (int)CVRPMgr.inst.correlatedVertices[nodeU.cour].Count; posV++)
+                    for (int posV = 0; posV < (int)ParametersMgr.inst.correlatedVertices[nodeU.cour].Count; posV++)
                     {
-                        nodeV = clients[CVRPMgr.inst.correlatedVertices[nodeU.cour][posV]];
+                        nodeV = clients[ParametersMgr.inst.correlatedVertices[nodeU.cour][posV]];
 
                         if (loopID == 0 || Mathf.Max(nodeU.route.whenLastModified, nodeV.route.whenLastModified) > lastTestRINodeU) // only evaluate moves involving routes that have been modified since last move evaluations for nodeU
                         {
@@ -464,15 +464,15 @@ public class LocalSearchMgr : MonoBehaviour
                     }
                 }
 
-                if (CVRPMgr.inst.ap.useSwapStar == true)
+                if (ParametersMgr.inst.ap.useSwapStar == true)
                 {
                     //(SWAP*)MOVES LIMITED TO ROUTE PAIRS WHOSE CIRCLE SECTORS OVERLAP
-                    for (int rU = 0; rU < CVRPMgr.inst.problem.vehicles; rU++)
+                    for (int rU = 0; rU < ParametersMgr.inst.nbVehicles; rU++)
                     {
                         routeU = routes[orderRoutes[rU]];
                         int lastTestSWAPStarRouteU = routeU.whenLastTestedSWAPStar;
                         routeU.whenLastTestedSWAPStar = nbMoves;
-                        for (int rV = 0; rV < CVRPMgr.inst.problem.vehicles; rV++)
+                        for (int rV = 0; rV < ParametersMgr.inst.nbVehicles; rV++)
                         {
                             routeV = routes[orderRoutes[rV]];
                             if (routeU.nbCustomers > 0 && routeV.nbCustomers > 0 && routeU.cour < routeV.cour
@@ -492,14 +492,14 @@ public class LocalSearchMgr : MonoBehaviour
         ExportIndividual(indiv);
     }
 
-    float PenaltyExcessDuration(float myDuration)
+    double PenaltyExcessDuration(double myDuration)
     {
-        return Mathf.Max(0, myDuration - CVRPMgr.inst.durationLimit) * penaltyDurationLS;
+        return Math.Max(0, myDuration - ParametersMgr.inst.durationLimit) * penaltyDurationLS;
     }
 
-    float PenaltyExcessLoad(float myLoad)
+    double PenaltyExcessLoad(double myLoad)
     {
-        return Mathf.Max(0, myLoad - CVRPMgr.inst.problem.capacity) * penaltyCapacityLS;
+        return Math.Max(0, myLoad - ParametersMgr.inst.vehicleCapacity) * penaltyCapacityLS;
     }
 
     void SetLocalVariablesRouteU()
@@ -510,10 +510,10 @@ public class LocalSearchMgr : MonoBehaviour
         nodeUIndex = nodeU.cour;
         nodeUPrevIndex = nodeU.prev.cour;
         nodeXIndex = nodeX.cour;
-        loadU = CVRPMgr.inst.problem.nodes[nodeUIndex].demand;
-        //serviceU = CVRPMgr.inst.problem.nodes[nodeUIndex].serviceDuration;
-        loadX = CVRPMgr.inst.problem.nodes[nodeXIndex].demand;
-        //serviceX = CVRPMgr.inst.problem.nodes[nodeXIndex].serviceDuration;
+        loadU = ParametersMgr.inst.cli[nodeUIndex].demand;
+        //serviceU = ParametersMgr.inst.problem.nodes[nodeUIndex].serviceDuration;
+        loadX = ParametersMgr.inst.cli[nodeXIndex].demand;
+        //serviceX = ParametersMgr.inst.problem.nodes[nodeXIndex].serviceDuration;
     }
 
     void SetLocalVariablesRouteV()
@@ -524,18 +524,18 @@ public class LocalSearchMgr : MonoBehaviour
         nodeVIndex = nodeV.cour;
         nodeVPrevIndex = nodeV.prev.cour;
         nodeYIndex = nodeY.cour;
-        loadV = CVRPMgr.inst.problem.nodes[nodeVIndex].demand;
-        //serviceV = CVRPMgr.inst.problem.nodes[nodeVIndex].serviceDuration;
-        loadY = CVRPMgr.inst.problem.nodes[nodeYIndex].demand;
-        //serviceY = CVRPMgr.inst.problem.nodes[nodeYIndex].serviceDuration;
+        loadV = ParametersMgr.inst.cli[nodeVIndex].demand;
+        //serviceV = ParametersMgr.inst.problem.nodes[nodeVIndex].serviceDuration;
+        loadY = ParametersMgr.inst.cli[nodeYIndex].demand;
+        //serviceY = ParametersMgr.inst.problem.nodes[nodeYIndex].serviceDuration;
         intraRouteMove = (routeU == routeV);
     }
 
     //(M1) If u is a customer visit, remove u from r(u) and place it after v in r(v);
     bool Move1()
     {
-        float costSuppU = matrix[nodeUPrevIndex, nodeXIndex] - matrix[nodeUPrevIndex, nodeUIndex] - matrix[nodeUIndex, nodeXIndex];
-        float costSuppV = matrix[nodeVIndex, nodeUIndex] + matrix[nodeUIndex, nodeYIndex] - matrix[nodeVIndex, nodeYIndex];
+        double costSuppU = matrix[nodeUPrevIndex][nodeXIndex] - matrix[nodeUPrevIndex][nodeUIndex] - matrix[nodeUIndex][nodeXIndex];
+        double costSuppV = matrix[nodeVIndex][nodeUIndex] + matrix[nodeUIndex][nodeYIndex] - matrix[nodeVIndex][nodeYIndex];
 
         if (!intraRouteMove) //if r(u) != r(v)
         {
@@ -552,7 +552,7 @@ public class LocalSearchMgr : MonoBehaviour
                 - routeV.penalty;
         }
 
-        if (costSuppU + costSuppV > -1e-2f)
+        if (costSuppU + costSuppV > -MY_EPSILON)
             return false;
         if (nodeUIndex == nodeYIndex)
             return false;
@@ -569,13 +569,13 @@ public class LocalSearchMgr : MonoBehaviour
     //(M2) If u and x are customer visits, remove them, then place u and x after v
     bool Move2()
     {
-        float costSuppU = matrix[nodeUPrevIndex, nodeXNextIndex]
-            - matrix[nodeUPrevIndex, nodeUIndex]
-            - matrix[nodeXIndex, nodeXNextIndex];
+        double costSuppU = matrix[nodeUPrevIndex][nodeXNextIndex]
+            - matrix[nodeUPrevIndex][nodeUIndex]
+            - matrix[nodeXIndex][nodeXNextIndex];
 
-        float costSuppV = matrix[nodeVIndex, nodeUIndex]
-            + matrix[nodeXIndex, nodeYIndex]
-            - matrix[nodeVIndex, nodeYIndex];
+        double costSuppV = matrix[nodeVIndex][nodeUIndex]
+            + matrix[nodeXIndex][nodeYIndex]
+            - matrix[nodeVIndex][nodeYIndex];
 
         if (!intraRouteMove) //if r(u) != r(v)
         {
@@ -583,16 +583,16 @@ public class LocalSearchMgr : MonoBehaviour
             if (costSuppU + costSuppV >= routeU.penalty + routeV.penalty)
                 return false;
 
-            costSuppU += PenaltyExcessDuration(routeU.duration + costSuppU - matrix[nodeUIndex, nodeXIndex] - serviceU - serviceX)
+            costSuppU += PenaltyExcessDuration(routeU.duration + costSuppU - matrix[nodeUIndex][nodeXIndex] - serviceU - serviceX)
                 + PenaltyExcessLoad(routeU.load - loadU - loadX)
                 - routeU.penalty;
 
-            costSuppV += PenaltyExcessDuration(routeV.duration + costSuppV + matrix[nodeUIndex, nodeXIndex] + serviceU + serviceX)
+            costSuppV += PenaltyExcessDuration(routeV.duration + costSuppV + matrix[nodeUIndex][nodeXIndex] + serviceU + serviceX)
                 + PenaltyExcessLoad(routeV.load + loadU + loadX)
                 - routeV.penalty;
         }
 
-        if (costSuppU + costSuppV > -1e-2f)
+        if (costSuppU + costSuppV > -MY_EPSILON)
             return false;
         if (nodeU == nodeY || nodeV == nodeX || nodeX.isDepot)
             return false;
@@ -610,15 +610,15 @@ public class LocalSearchMgr : MonoBehaviour
     //(M3) If u and x are customer visits, remove them, then place x and u after v
     bool Move3()
     {
-        float costSuppU = matrix[nodeUPrevIndex, nodeXNextIndex]
-            - matrix[nodeUPrevIndex, nodeUIndex]
-            - matrix[nodeUIndex, nodeXIndex]
-            - matrix[nodeXIndex, nodeXNextIndex];
+        double costSuppU = matrix[nodeUPrevIndex][nodeXNextIndex]
+            - matrix[nodeUPrevIndex][nodeUIndex]
+            - matrix[nodeUIndex][nodeXIndex]
+            - matrix[nodeXIndex][nodeXNextIndex];
 
-        float costSuppV = matrix[nodeVIndex, nodeXIndex]
-            + matrix[nodeXIndex, nodeUIndex]
-            + matrix[nodeUIndex, nodeYIndex]
-            - matrix[nodeVIndex, nodeYIndex];
+        double costSuppV = matrix[nodeVIndex][nodeXIndex]
+            + matrix[nodeXIndex][nodeUIndex]
+            + matrix[nodeUIndex][nodeYIndex]
+            - matrix[nodeVIndex][nodeYIndex];
 
         if (!intraRouteMove)
         {
@@ -635,7 +635,7 @@ public class LocalSearchMgr : MonoBehaviour
                 - routeV.penalty;
         }
 
-        if (costSuppU + costSuppV > -1e-2f)
+        if (costSuppU + costSuppV > -MY_EPSILON)
             return false;
         if (nodeU == nodeY || nodeV == nodeX || nodeX.isDepot)
             return false;
@@ -656,15 +656,15 @@ public class LocalSearchMgr : MonoBehaviour
     //(M4) If u and v are customer visits, swap u and v
     bool Move4()
     {
-        float costSuppU = matrix[nodeUPrevIndex, nodeVIndex]
-            + matrix[nodeVIndex, nodeXIndex]
-            - matrix[nodeUPrevIndex, nodeUIndex]
-            - matrix[nodeUIndex, nodeXIndex];
+        double costSuppU = matrix[nodeUPrevIndex][nodeVIndex]
+            + matrix[nodeVIndex][nodeXIndex]
+            - matrix[nodeUPrevIndex][nodeUIndex]
+            - matrix[nodeUIndex][nodeXIndex];
 
-        float costSuppV = matrix[nodeVPrevIndex, nodeUIndex]
-            + matrix[nodeUIndex, nodeYIndex]
-            - matrix[nodeVPrevIndex, nodeVIndex]
-            - matrix[nodeVIndex, nodeYIndex];
+        double costSuppV = matrix[nodeVPrevIndex][nodeUIndex]
+            + matrix[nodeUIndex][nodeYIndex]
+            - matrix[nodeVPrevIndex][nodeVIndex]
+            - matrix[nodeVIndex][nodeYIndex];
 
         if (!intraRouteMove)
         {
@@ -680,7 +680,7 @@ public class LocalSearchMgr : MonoBehaviour
                 - routeV.penalty;
         }
 
-        if (costSuppU + costSuppV > -1e-2f)
+        if (costSuppU + costSuppV > -MY_EPSILON)
             return false;
         if (nodeUIndex == nodeVPrevIndex || nodeUIndex == nodeYIndex ||
             nodeU.isDepot || nodeV.isDepot)
@@ -698,15 +698,15 @@ public class LocalSearchMgr : MonoBehaviour
     //(M5) If u, x, and v are customer visits, swap u and x with v
     bool Move5()
     {
-        float costSuppU = matrix[nodeUPrevIndex, nodeVIndex]
-            + matrix[nodeVIndex, nodeXNextIndex]
-            - matrix[nodeUPrevIndex, nodeUIndex]
-            - matrix[nodeXIndex, nodeXNextIndex];
+        double costSuppU = matrix[nodeUPrevIndex][nodeVIndex]
+            + matrix[nodeVIndex][nodeXNextIndex]
+            - matrix[nodeUPrevIndex][nodeUIndex]
+            - matrix[nodeXIndex][nodeXNextIndex];
 
-        float costSuppV = matrix[nodeVPrevIndex, nodeUIndex]
-            + matrix[nodeXIndex, nodeYIndex]
-            - matrix[nodeVPrevIndex, nodeVIndex]
-            - matrix[nodeVIndex, nodeYIndex];
+        double costSuppV = matrix[nodeVPrevIndex][nodeUIndex]
+            + matrix[nodeXIndex][nodeYIndex]
+            - matrix[nodeVPrevIndex][nodeVIndex]
+            - matrix[nodeVIndex][nodeYIndex];
 
         if (!intraRouteMove)
         {
@@ -714,16 +714,16 @@ public class LocalSearchMgr : MonoBehaviour
             if (costSuppU + costSuppV >= routeU.penalty + routeV.penalty)
                 return false;
 
-            costSuppU += PenaltyExcessDuration(routeU.duration + costSuppU - matrix[nodeUIndex, nodeXIndex] + serviceV - serviceU - serviceX)
+            costSuppU += PenaltyExcessDuration(routeU.duration + costSuppU - matrix[nodeUIndex][nodeXIndex] + serviceV - serviceU - serviceX)
                 + PenaltyExcessLoad(routeU.load + loadV - loadU - loadX)
                 - routeU.penalty;
 
-            costSuppV += PenaltyExcessDuration(routeV.duration + costSuppV + matrix[nodeUIndex, nodeXIndex] - serviceV + serviceU + serviceX)
+            costSuppV += PenaltyExcessDuration(routeV.duration + costSuppV + matrix[nodeUIndex][nodeXIndex] - serviceV + serviceU + serviceX)
                 + PenaltyExcessLoad(routeV.load + loadU + loadX - loadV)
                 - routeV.penalty;
         }
 
-        if (costSuppU + costSuppV > -1e-2f)
+        if (costSuppU + costSuppV > -MY_EPSILON)
             return false;
         if (nodeU == nodeV.prev || nodeX == nodeV.prev || nodeU == nodeY || 
             nodeX.isDepot || nodeU.isDepot || nodeY.isDepot)
@@ -742,31 +742,31 @@ public class LocalSearchMgr : MonoBehaviour
     //(M6) If u, x, v, and y are customer visits, swap u and x with v and y
     bool Move6()
     {
-        float costSuppU = matrix[nodeUPrevIndex, nodeVIndex]
-            + matrix[nodeYIndex, nodeXNextIndex]
-            - matrix[nodeUPrevIndex, nodeUIndex]
-            - matrix[nodeXIndex, nodeXNextIndex];
+        double costSuppU = matrix[nodeUPrevIndex][nodeVIndex]
+            + matrix[nodeYIndex][nodeXNextIndex]
+            - matrix[nodeUPrevIndex][nodeUIndex]
+            - matrix[nodeXIndex][nodeXNextIndex];
 
-        float costSuppV = matrix[nodeVPrevIndex, nodeUIndex]
-            + matrix[nodeXIndex, nodeYNextIndex]
-            - matrix[nodeVPrevIndex, nodeVIndex]
-            - matrix[nodeYIndex, nodeYNextIndex];
+        double costSuppV = matrix[nodeVPrevIndex][nodeUIndex]
+            + matrix[nodeXIndex][nodeYNextIndex]
+            - matrix[nodeVPrevIndex][nodeVIndex]
+            - matrix[nodeYIndex][nodeYNextIndex];
 
         if (!intraRouteMove)
         {
             // Early move pruning to save CPU time. Guarantees that this move cannot improve without checking additional (load, duration...) constraints
             if (costSuppU + costSuppV >= routeU.penalty + routeV.penalty) return false;
 
-            costSuppU += PenaltyExcessDuration(routeU.duration + costSuppU - matrix[nodeUIndex, nodeXIndex] + matrix[nodeVIndex, nodeYIndex] + serviceV + serviceY - serviceU - serviceX)
+            costSuppU += PenaltyExcessDuration(routeU.duration + costSuppU - matrix[nodeUIndex][nodeXIndex] + matrix[nodeVIndex][nodeYIndex] + serviceV + serviceY - serviceU - serviceX)
                 + PenaltyExcessLoad(routeU.load + loadV + loadY - loadU - loadX)
                 - routeU.penalty;
 
-            costSuppV += PenaltyExcessDuration(routeV.duration + costSuppV + matrix[nodeUIndex, nodeXIndex] - matrix[nodeVIndex, nodeYIndex] - serviceV - serviceY + serviceU + serviceX)
+            costSuppV += PenaltyExcessDuration(routeV.duration + costSuppV + matrix[nodeUIndex][nodeXIndex] - matrix[nodeVIndex][nodeYIndex] - serviceV - serviceY + serviceU + serviceX)
                 + PenaltyExcessLoad(routeV.load + loadU + loadX - loadV - loadY)
                 - routeV.penalty;
         }
 
-        if (costSuppU + costSuppV > -1e-2f) return false;
+        if (costSuppU + costSuppV > -MY_EPSILON) return false;
         if (nodeX.isDepot || nodeY.isDepot || nodeU.isDepot || nodeV.isDepot
             || nodeY == nodeU.prev || nodeU == nodeY || nodeX == nodeV || nodeV == nodeX.next) return false;
 
@@ -784,14 +784,14 @@ public class LocalSearchMgr : MonoBehaviour
     bool Move7()
     {
         if (nodeU.position > nodeV.position) return false;
-        float cost = matrix[nodeUIndex, nodeVIndex]
-            + matrix[nodeXIndex, nodeYIndex]
-            - matrix[nodeUIndex, nodeXIndex]
-            - matrix[nodeVIndex, nodeYIndex]
+        double cost = matrix[nodeUIndex][nodeVIndex]
+            + matrix[nodeXIndex][nodeYIndex]
+            - matrix[nodeUIndex][nodeXIndex]
+            - matrix[nodeVIndex][nodeYIndex]
             + nodeV.cumulatedReversalDistance
             - nodeX.cumulatedReversalDistance;
 
-        if (cost > -1e-2f) return false;
+        if (cost > -MY_EPSILON) return false;
         if (nodeU.next == nodeV) return false;
 
         Node nodeNum = nodeX.next;
@@ -827,24 +827,24 @@ public class LocalSearchMgr : MonoBehaviour
     //(M8) If r(u) != r(v), replace (u, x) and (v, y) by (u, v) and (x, y)
     bool Move8()
     {
-        float cost = matrix[nodeUIndex, nodeVIndex] + matrix[nodeXIndex, nodeYIndex]
-            - matrix[nodeUIndex, nodeXIndex] - matrix[nodeVIndex, nodeYIndex]
+        double cost = matrix[nodeUIndex][nodeVIndex] + matrix[nodeXIndex][nodeYIndex]
+            - matrix[nodeUIndex][nodeXIndex] - matrix[nodeVIndex][nodeYIndex]
             + nodeV.cumulatedReversalDistance + routeU.reversalDistance
             - nodeX.cumulatedReversalDistance - routeU.penalty - routeV.penalty;
 
 
-        float prePrune = cost;
+        double prePrune = cost;
 
         // Early move pruning to save CPU time. Guarantees that this move cannot improve without checking additional (load, duration...) constraints
         if (cost >= 0) return false;
 
-        cost += PenaltyExcessDuration(nodeU.cumulatedTime + nodeV.cumulatedTime + nodeV.cumulatedReversalDistance + matrix[nodeUIndex, nodeVIndex])
-            + PenaltyExcessDuration(routeU.duration - nodeU.cumulatedTime - matrix[nodeUIndex, nodeXIndex] + routeU.reversalDistance
-                - nodeX.cumulatedReversalDistance + routeV.duration - nodeV.cumulatedTime - matrix[nodeVIndex, nodeYIndex] + matrix[nodeXIndex, nodeYIndex])
+        cost += PenaltyExcessDuration(nodeU.cumulatedTime + nodeV.cumulatedTime + nodeV.cumulatedReversalDistance + matrix[nodeUIndex][nodeVIndex])
+            + PenaltyExcessDuration(routeU.duration - nodeU.cumulatedTime - matrix[nodeUIndex][nodeXIndex] + routeU.reversalDistance
+                - nodeX.cumulatedReversalDistance + routeV.duration - nodeV.cumulatedTime - matrix[nodeVIndex][nodeYIndex] + matrix[nodeXIndex][nodeYIndex])
             + PenaltyExcessLoad(nodeU.cumulatedLoad + nodeV.cumulatedLoad)
             + PenaltyExcessLoad(routeU.load + routeV.load - nodeU.cumulatedLoad - nodeV.cumulatedLoad);
 
-        if (cost > -1e-2f) return false;
+        if (cost > -MY_EPSILON) return false;
 
         if(printInMove)
             Debug.Log($"Pre-prune = {prePrune} Cost = {cost}");
@@ -925,23 +925,23 @@ public class LocalSearchMgr : MonoBehaviour
     //(M9) If r(u) != r(v), replace (u, x) and (v, y) by (u, y) and (x, v)
     bool Move9()
     {
-        float cost = matrix[nodeUIndex, nodeYIndex] + matrix[nodeVIndex, nodeXIndex]
-            - matrix[nodeUIndex, nodeXIndex] - matrix[nodeVIndex, nodeYIndex]
+        double cost = matrix[nodeUIndex][nodeYIndex] + matrix[nodeVIndex][nodeXIndex]
+            - matrix[nodeUIndex][nodeXIndex] - matrix[nodeVIndex][nodeYIndex]
             - routeU.penalty - routeV.penalty;
 
-        float prePrune = matrix[nodeUIndex, nodeYIndex] + matrix[nodeVIndex, nodeXIndex] 
-            - matrix[nodeUIndex, nodeXIndex] - matrix[nodeVIndex,nodeYIndex]
+        double prePrune = matrix[nodeUIndex][nodeYIndex] + matrix[nodeVIndex][nodeXIndex] 
+            - matrix[nodeUIndex][nodeXIndex] - matrix[nodeVIndex][nodeYIndex]
             - routeU.penalty - routeV.penalty;
 
         // Early move pruning to save CPU time. Guarantees that this move cannot improve without checking additional (load, duration...) constraints
         if (cost >= 0) return false;
 
-        cost += PenaltyExcessDuration(nodeU.cumulatedTime + routeV.duration - nodeV.cumulatedTime - matrix[nodeVIndex, nodeYIndex] + matrix[nodeUIndex, nodeYIndex])
-            + PenaltyExcessDuration(routeU.duration - nodeU.cumulatedTime - matrix[nodeUIndex, nodeXIndex] + nodeV.cumulatedTime + matrix[nodeVIndex, nodeXIndex])
+        cost += PenaltyExcessDuration(nodeU.cumulatedTime + routeV.duration - nodeV.cumulatedTime - matrix[nodeVIndex][nodeYIndex] + matrix[nodeUIndex][nodeYIndex])
+            + PenaltyExcessDuration(routeU.duration - nodeU.cumulatedTime - matrix[nodeUIndex][nodeXIndex] + nodeV.cumulatedTime + matrix[nodeVIndex][nodeXIndex])
             + PenaltyExcessLoad(nodeU.cumulatedLoad + routeV.load - nodeV.cumulatedLoad)
             + PenaltyExcessLoad(nodeV.cumulatedLoad + routeU.load - nodeU.cumulatedLoad);
 
-        if (cost > -1e-2f) return false;
+        if (cost > -MY_EPSILON) return false;
 
         if (printInMove)
             Debug.Log($"Pre-prune = {prePrune} Cost = {cost}");
@@ -1019,8 +1019,8 @@ public class LocalSearchMgr : MonoBehaviour
         {
             for (nodeV = routeV.depot.next; !nodeV.isDepot; nodeV = nodeV.next)
             {
-                float deltaPenRouteU = PenaltyExcessLoad(routeU.load + CVRPMgr.inst.problem.nodes[nodeV.cour].demand - CVRPMgr.inst.problem.nodes[nodeU.cour].demand) - routeU.penalty;
-                float deltaPenRouteV = PenaltyExcessLoad(routeV.load + CVRPMgr.inst.problem.nodes[nodeU.cour].demand - CVRPMgr.inst.problem.nodes[nodeV.cour].demand) - routeV.penalty;
+                double deltaPenRouteU = PenaltyExcessLoad(routeU.load + ParametersMgr.inst.cli[nodeV.cour].demand - ParametersMgr.inst.cli[nodeU.cour].demand) - routeU.penalty;
+                double deltaPenRouteV = PenaltyExcessLoad(routeV.load + ParametersMgr.inst.cli[nodeU.cour].demand - ParametersMgr.inst.cli[nodeV.cour].demand) - routeV.penalty;
 
                 // Quick filter: possibly early elimination of many SWAP* due to the capacity constraints/penalties and bounds on insertion costs
                 if (deltaPenRouteU + nodeU.deltaRemoval + deltaPenRouteV + nodeV.deltaRemoval <= 0)
@@ -1030,15 +1030,15 @@ public class LocalSearchMgr : MonoBehaviour
                     mySwapStar.V = nodeV;
 
                     // Evaluate best reinsertion cost of U in the route of V where V has been removed
-                    float extraV = GetCheapestInsertSimultRemoval(nodeU, nodeV, ref mySwapStar.bestPositionU);
+                    double extraV = GetCheapestInsertSimultRemoval(nodeU, nodeV, ref mySwapStar.bestPositionU);
 
                     // Evaluate best reinsertion cost of V in the route of U where U has been removed
-                    float extraU = GetCheapestInsertSimultRemoval(nodeV, nodeU, ref mySwapStar.bestPositionV);
+                    double extraU = GetCheapestInsertSimultRemoval(nodeV, nodeU, ref mySwapStar.bestPositionV);
 
                     // Evaluating final cost
                     mySwapStar.moveCost = deltaPenRouteU + nodeU.deltaRemoval + extraU + deltaPenRouteV + nodeV.deltaRemoval + extraV
-                        + PenaltyExcessDuration(routeU.duration + nodeU.deltaRemoval + extraU /*+ CVRPMgr.inst.problem.nodes[nodeV.cour].serviceDuration - CVRPMgr.inst.problem.nodes[nodeU.cour].serviceDuration*/)
-                        + PenaltyExcessDuration(routeV.duration + nodeV.deltaRemoval + extraV /*- CVRPMgr.inst.problem.nodes[nodeV.cour].serviceDuration + CVRPMgr.inst.problem.nodes[nodeU.cour].serviceDuration*/);
+                        + PenaltyExcessDuration(routeU.duration + nodeU.deltaRemoval + extraU + ParametersMgr.inst.cli[nodeV.cour].serviceDuration - ParametersMgr.inst.cli[nodeU.cour].serviceDuration)
+                        + PenaltyExcessDuration(routeV.duration + nodeV.deltaRemoval + extraV - ParametersMgr.inst.cli[nodeV.cour].serviceDuration + ParametersMgr.inst.cli[nodeU.cour].serviceDuration);
 
                     if (mySwapStar.moveCost < myBestSwapStar.moveCost)
                         myBestSwapStar = mySwapStar;
@@ -1053,15 +1053,13 @@ public class LocalSearchMgr : MonoBehaviour
             SwapStarElement mySwapStar = new SwapStarElement();
             mySwapStar.U = nodeU;
             mySwapStar.bestPositionU = bestInsertClient[routeV.cour, nodeU.cour].bestLocation[0];
-            float deltaDistRouteU = matrix[nodeU.prev.cour, nodeU.next.cour]
-                - matrix[nodeU.prev.cour, nodeU.cour]
-                - matrix[nodeU.cour, nodeU.next.cour];
-            float deltaDistRouteV = bestInsertClient[routeV.cour, nodeU.cour].bestCost[0];
+            double deltaDistRouteU = ParametersMgr.inst.timeCost[nodeU.prev.cour][nodeU.next.cour] - ParametersMgr.inst.timeCost[nodeU.prev.cour][nodeU.cour] - ParametersMgr.inst.timeCost[nodeU.cour][nodeU.next.cour];
+            double deltaDistRouteV = bestInsertClient[routeV.cour, nodeU.cour].bestCost[0];
             mySwapStar.moveCost = deltaDistRouteU + deltaDistRouteV
-                + PenaltyExcessLoad(routeU.load - CVRPMgr.inst.problem.nodes[nodeU.cour].demand) - routeU.penalty
-                + PenaltyExcessLoad(routeV.load + CVRPMgr.inst.problem.nodes[nodeU.cour].demand) - routeV.penalty
-                + PenaltyExcessDuration(routeU.duration + deltaDistRouteU /*- CVRPMgr.inst.problem.nodes[nodeU.cour].serviceDuration*/)
-                + PenaltyExcessDuration(routeV.duration + deltaDistRouteV /*+ CVRPMgr.inst.problem.nodes[nodeU.cour].serviceDuration*/);
+                + PenaltyExcessLoad(routeU.load - ParametersMgr.inst.cli[nodeU.cour].demand) - routeU.penalty
+                + PenaltyExcessLoad(routeV.load + ParametersMgr.inst.cli[nodeU.cour].demand) - routeV.penalty
+                + PenaltyExcessDuration(routeU.duration + deltaDistRouteU - ParametersMgr.inst.cli[nodeU.cour].serviceDuration)
+                + PenaltyExcessDuration(routeV.duration + deltaDistRouteV + ParametersMgr.inst.cli[nodeU.cour].serviceDuration);
 
             if (mySwapStar.moveCost < myBestSwapStar.moveCost)
                 myBestSwapStar = mySwapStar;
@@ -1073,21 +1071,19 @@ public class LocalSearchMgr : MonoBehaviour
             SwapStarElement mySwapStar = new SwapStarElement();
             mySwapStar.V = nodeV;
             mySwapStar.bestPositionV = bestInsertClient[routeU.cour, nodeV.cour].bestLocation[0];
-            float deltaDistRouteU = bestInsertClient[routeU.cour, nodeV.cour].bestCost[0];
-            float deltaDistRouteV = matrix[nodeV.prev.cour, nodeV.next.cour]
-                - matrix[nodeV.prev.cour, nodeV.cour]
-                - matrix[nodeV.cour, nodeV.next.cour];
+            double deltaDistRouteU = bestInsertClient[routeU.cour, nodeV.cour].bestCost[0];
+            double deltaDistRouteV = ParametersMgr.inst.timeCost[nodeV.prev.cour][nodeV.next.cour] - ParametersMgr.inst.timeCost[nodeV.prev.cour][nodeV.cour] - ParametersMgr.inst.timeCost[nodeV.cour][nodeV.next.cour];
             mySwapStar.moveCost = deltaDistRouteU + deltaDistRouteV
-                + PenaltyExcessLoad(routeU.load + CVRPMgr.inst.problem.nodes[nodeV.cour].demand) - routeU.penalty
-                + PenaltyExcessLoad(routeV.load - CVRPMgr.inst.problem.nodes[nodeV.cour].demand) - routeV.penalty
-                + PenaltyExcessDuration(routeU.duration + deltaDistRouteU /*+ CVRPMgr.inst.problem.nodes[nodeV.cour].serviceDuration*/)
-                + PenaltyExcessDuration(routeV.duration + deltaDistRouteV /*- CVRPMgr.inst.problem.nodes[nodeV.cour].serviceDuration*/);
+                + PenaltyExcessLoad(routeU.load + ParametersMgr.inst.cli[nodeV.cour].demand) - routeU.penalty
+                + PenaltyExcessLoad(routeV.load - ParametersMgr.inst.cli[nodeV.cour].demand) - routeV.penalty
+                + PenaltyExcessDuration(routeU.duration + deltaDistRouteU + ParametersMgr.inst.cli[nodeV.cour].serviceDuration)
+                + PenaltyExcessDuration(routeV.duration + deltaDistRouteV - ParametersMgr.inst.cli[nodeV.cour].serviceDuration);
 
             if (mySwapStar.moveCost < myBestSwapStar.moveCost)
                 myBestSwapStar = mySwapStar;
         }
 
-        if (myBestSwapStar.moveCost > -1e-2f) return false;
+        if (myBestSwapStar.moveCost > -MY_EPSILON) return false;
 
         // Applying the best move in case of improvement
         if (myBestSwapStar.bestPositionU != null) InsertNode(myBestSwapStar.U, myBestSwapStar.bestPositionU);
@@ -1096,18 +1092,17 @@ public class LocalSearchMgr : MonoBehaviour
         searchCompleted = false;
         UpdateRouteData(routeU);
         UpdateRouteData(routeV);
-
         return true;
     }
 
-    float GetCheapestInsertSimultRemoval(Node U, Node V, ref Node bestPosition)
+    double GetCheapestInsertSimultRemoval(Node U, Node V, ref Node bestPosition)
     {
         ThreeBestInsert myBestInsert = bestInsertClient[V.route.cour, U.cour];
         bool found = false;
 
         // Find best insertion in the route such that V is not next or pred (can only belong to the top three locations)
         bestPosition = myBestInsert.bestLocation[0];
-        float bestCost = myBestInsert.bestCost[0];
+        double bestCost = myBestInsert.bestCost[0];
         found = (bestPosition != V && bestPosition.next != V);
         if (!found && myBestInsert.bestLocation[1] != null)
         {
@@ -1123,9 +1118,9 @@ public class LocalSearchMgr : MonoBehaviour
         }
 
         // Compute insertion in the place of V
-        float deltaCost = matrix[V.prev.cour, U.cour]
-            + matrix[U.cour, V.next.cour]
-            - matrix[V.prev.cour, V.next.cour];
+        double deltaCost = matrix[V.prev.cour][U.cour]
+            + matrix[U.cour][V.next.cour]
+            - matrix[V.prev.cour][V.next.cour];
         if (!found || deltaCost < bestCost)
         {
             bestPosition = V.prev;
@@ -1139,23 +1134,23 @@ public class LocalSearchMgr : MonoBehaviour
     {
         for (Node U = R1.depot.next; !U.isDepot; U = U.next)
         {
-            U.deltaRemoval = matrix[U.prev.cour, U.next.cour]
-                - matrix[U.prev.cour, U.cour]
-                - matrix[U.cour, U.next.cour];
+            U.deltaRemoval = matrix[U.prev.cour][U.next.cour]
+                - matrix[U.prev.cour][U.cour]
+                - matrix[U.cour][U.next.cour];
 
             if (R2.whenLastModified > bestInsertClient[R2.cour, U.cour].whenLastCalculated)
             {
                 bestInsertClient[R2.cour, U.cour].Reset();
                 bestInsertClient[R2.cour, U.cour].whenLastCalculated = nbMoves;
-                bestInsertClient[R2.cour, U.cour].bestCost[0] = matrix[0, U.cour]
-                    + matrix[U.cour, R2.depot.next.cour]
-                    - matrix[0, R2.depot.next.cour];
+                bestInsertClient[R2.cour, U.cour].bestCost[0] = matrix[0][U.cour]
+                    + matrix[U.cour][R2.depot.next.cour]
+                    - matrix[0][R2.depot.next.cour];
                 bestInsertClient[R2.cour, U.cour].bestLocation[0] = R2.depot;
                 for (Node V = R2.depot.next; !V.isDepot; V = V.next)
                 {
-                    float deltaCost = matrix[V.cour, U.cour]
-                        + matrix[U.cour, V.next.cour]
-                        - matrix[V.cour, V.next.cour];
+                    double deltaCost = matrix[V.cour][U.cour]
+                        + matrix[U.cour][V.next.cour]
+                        - matrix[V.cour][V.next.cour];
                     bestInsertClient[R2.cour, U.cour].CompareAndAdd(deltaCost, V);
                 }
             }
@@ -1201,11 +1196,11 @@ public class LocalSearchMgr : MonoBehaviour
     void UpdateRouteData(Route myRoute)
     {
         int myplace = 0;
-        float myload = 0;
-        float mytime = 0;
-        float myReversalDistance = 0;
-        float cumulatedX = 0;
-        float cumulatedY = 0;
+        double myload = 0;
+        double mytime = 0;
+        double myReversalDistance = 0;
+        double cumulatedX = 0;
+        double cumulatedY = 0;
 
         Node mynode = myRoute.depot;
         mynode.position = 0;
@@ -1220,18 +1215,18 @@ public class LocalSearchMgr : MonoBehaviour
             mynode = mynode.next;
             myplace++;
             mynode.position = myplace;
-            myload += CVRPMgr.inst.problem.nodes[mynode.cour].demand;
-            mytime += matrix[mynode.prev.cour, mynode.cour] + CVRPMgr.inst.problem.nodes[mynode.cour].serviceDuration;
-            myReversalDistance += matrix[mynode.cour, mynode.prev.cour] - matrix[mynode.prev.cour, mynode.cour];
+            myload += ParametersMgr.inst.cli[mynode.cour].demand;
+            mytime += matrix[mynode.prev.cour][mynode.cour] + ParametersMgr.inst.cli[mynode.cour].serviceDuration;
+            myReversalDistance += matrix[mynode.cour][mynode.prev.cour] - matrix[mynode.prev.cour][mynode.cour];
             mynode.cumulatedLoad = myload;
             mynode.cumulatedTime = mytime;
             mynode.cumulatedReversalDistance = myReversalDistance;
             if (!mynode.isDepot)
             {
-                cumulatedX += CVRPMgr.inst.problem.nodes[mynode.cour].coordinate.x;
-                cumulatedY += CVRPMgr.inst.problem.nodes[mynode.cour].coordinate.y;
-                if (firstIt) myRoute.sector.initialize(CVRPMgr.inst.problem.nodes[mynode.cour].polarAngle);
-                else myRoute.sector.extend(CVRPMgr.inst.problem.nodes[mynode.cour].polarAngle);
+                cumulatedX += ParametersMgr.inst.cli[mynode.cour].coordX;
+                cumulatedY += ParametersMgr.inst.cli[mynode.cour].coordY;
+                if (firstIt) myRoute.sector.initialize(ParametersMgr.inst.cli[mynode.cour].polarAngle);
+                else myRoute.sector.extend(ParametersMgr.inst.cli[mynode.cour].polarAngle);
             }
             firstIt = false;
         }
@@ -1253,7 +1248,7 @@ public class LocalSearchMgr : MonoBehaviour
         }
         else
         {
-            myRoute.polarAngleBarycenter = Mathf.Atan2(cumulatedY / (float)myRoute.nbCustomers - CVRPMgr.inst.problem.nodes[0].coordinate.y, cumulatedX / (float)myRoute.nbCustomers - CVRPMgr.inst.problem.nodes[0].coordinate.x);
+            myRoute.polarAngleBarycenter = Math.Atan2(cumulatedY / (double)myRoute.nbCustomers - ParametersMgr.inst.cli[0].coordY, cumulatedX / (double)myRoute.nbCustomers - ParametersMgr.inst.cli[0].coordX);
             emptyRoutes.Remove(myRoute.cour);
         }
     }
@@ -1263,7 +1258,7 @@ public class LocalSearchMgr : MonoBehaviour
         emptyRoutes.Clear();
         nbMoves = 0;
 
-        for (int r = 0; r < CVRPMgr.inst.problem.vehicles; r++)
+        for (int r = 0; r < ParametersMgr.inst.nbVehicles; r++)
         {
             Node myDepot = depots[r];
             Node myDepotFin = depotsEnd[r];
@@ -1295,25 +1290,25 @@ public class LocalSearchMgr : MonoBehaviour
             }
             UpdateRouteData(routes[r]);
             routes[r].whenLastTestedSWAPStar = -1;
-            for (int i = 1; i <= CVRPMgr.inst.problem.customers; i++)
+            for (int i = 1; i <= ParametersMgr.inst.nbClients; i++)
                 bestInsertClient[r, i].whenLastCalculated = -1;
         }
 
-        for (int i = 1; i <= CVRPMgr.inst.problem.customers; i++)
+        for (int i = 1; i <= ParametersMgr.inst.nbClients; i++)
             clients[i].whenLastTestedRI = -1;
     }
 
 
     void ExportIndividual(Individual indiv)
     {
-        List<Tuple<float, int>> routePolarAngles = new List<Tuple<float, int>>();
-        for (int r = 0; r < CVRPMgr.inst.problem.vehicles; r++)
-            routePolarAngles.Add(new Tuple<float, int>(routes[r].polarAngleBarycenter, r));
+        List<Tuple<double, int>> routePolarAngles = new List<Tuple<double, int>>();
+        for (int r = 0; r < ParametersMgr.inst.nbVehicles; r++)
+            routePolarAngles.Add(new Tuple<double, int>(routes[r].polarAngleBarycenter, r));
         routePolarAngles.Sort();
 
 
         int pos = 0;
-        for (int r = 0; r < CVRPMgr.inst.problem.vehicles; r++)
+        for (int r = 0; r < ParametersMgr.inst.nbVehicles; r++)
         {
             indiv.chromR[r].Clear();
             Node node = depots[routePolarAngles[r].Item2].next;
@@ -1335,33 +1330,33 @@ public class LocalSearchMgr : MonoBehaviour
 
     public void InitValues()
     {
-        matrix = CVRPMgr.inst.problem.adjacencyMatrix;
+        matrix = ParametersMgr.inst.timeCost;
 
-        penaltyCapacityLS = CVRPMgr.inst.penaltyCapacity;
-        penaltyDurationLS = CVRPMgr.inst.penaltyDuration;
-        clients = new Node[CVRPMgr.inst.problem.customers + 1];
-        routes = new Route[CVRPMgr.inst.problem.vehicles];
-        depots = new Node[CVRPMgr.inst.problem.vehicles];
-        depotsEnd = new Node[CVRPMgr.inst.problem.vehicles];
-        bestInsertClient = new ThreeBestInsert[CVRPMgr.inst.problem.vehicles, CVRPMgr.inst.problem.customers + 1];
+        penaltyCapacityLS = ParametersMgr.inst.penaltyCapacity;
+        penaltyDurationLS = ParametersMgr.inst.penaltyDuration;
+        clients = new Node[ParametersMgr.inst.nbClients + 1];
+        routes = new Route[ParametersMgr.inst.nbVehicles];
+        depots = new Node[ParametersMgr.inst.nbVehicles];
+        depotsEnd = new Node[ParametersMgr.inst.nbVehicles];
+        bestInsertClient = new ThreeBestInsert[ParametersMgr.inst.nbVehicles, ParametersMgr.inst.nbClients + 1];
         orderNodes = new List<int>();
         orderRoutes = new List<int>();
         emptyRoutes = new SortedSet<int>();
 
-        for (int i = 0; i < CVRPMgr.inst.problem.vehicles; i++)
+        for (int i = 0; i < ParametersMgr.inst.nbVehicles; i++)
         {
-            for (int j = 0; j < CVRPMgr.inst.problem.customers + 1; j++)
+            for (int j = 0; j < ParametersMgr.inst.nbClients + 1; j++)
             {
                 bestInsertClient[i, j] = new ThreeBestInsert();
             }
         }
-        for (int i = 0; i <= CVRPMgr.inst.problem.customers; i++)
+        for (int i = 0; i <= ParametersMgr.inst.nbClients; i++)
         {
             clients[i] = new Node();
             clients[i].cour = i;
             clients[i].isDepot = false;
         }
-        for (int i = 0; i < CVRPMgr.inst.problem.vehicles; i++)
+        for (int i = 0; i < ParametersMgr.inst.nbVehicles; i++)
         {
             depots[i] = new Node();
             depotsEnd[i] = new Node();
@@ -1387,9 +1382,9 @@ public class LocalSearchMgr : MonoBehaviour
             depots[i].prev = depotsEnd[i];
 
         }
-        for (int i = 1; i <= CVRPMgr.inst.problem.customers; i++)
+        for (int i = 1; i <= ParametersMgr.inst.nbClients; i++)
             orderNodes.Add(i);
-        for (int r = 0; r < CVRPMgr.inst.problem.vehicles; r++)
+        for (int r = 0; r < ParametersMgr.inst.nbVehicles; r++)
             orderRoutes.Add(r);
     }
 
@@ -1399,7 +1394,7 @@ public class LocalSearchMgr : MonoBehaviour
         InitValues();
 
         Individual randomIndiv = new Individual();
-        SplitMgr.inst.GeneralSplit(randomIndiv, CVRPMgr.inst.problem.vehicles);
+        SplitMgr.inst.GeneralSplit(randomIndiv, ParametersMgr.inst.nbVehicles);
         /*randomIndiv.chromR =  new List<List<int>>
         {
             new List<int> { 25, 23, 22, 26, 19, 20, 21, 9 },
@@ -1411,7 +1406,7 @@ public class LocalSearchMgr : MonoBehaviour
         orderNodes = new List<int> { 34, 3, 25, 30, 27, 11, 38, 29, 42, 7, 24, 13, 28, 36, 23, 12, 40, 6, 16, 10, 9, 14, 33, 15, 17, 21, 1, 41, 20, 26, 2, 44, 18, 5, 32, 37, 35, 43, 31, 22, 19, 4, 39, 8 };
         orderRoutes = new List<int> { 2, 3, 1, 0 };*/
         /*
-        CVRPMgr.inst.correlatedVertices = new List<List<int>>
+        ParametersMgr.inst.correlatedVertices = new List<List<int>>
         {
             new List<int> {40,16,42,24,14,21,36,18,10,11,39,2,9,44,43,15,22,13,41,20,17,8,23,26,19,38,25,37,12},
             new List<int> {38,22,42,26,16,23,10,18,40,15,44,36,8,14,25,12,1,11,20,17,9,43,13,24,21,39,19,37},
@@ -1459,8 +1454,8 @@ public class LocalSearchMgr : MonoBehaviour
             new List<int> {34,2,20,1,24,37,16,19,38,39,40,8,15,29,26,22,9,33,25,41,21,42,32,23,43,36,30,28,31}
         };*/
 
-        penaltyCapacityLS = CVRPMgr.inst.penaltyCapacity;
-        penaltyDurationLS = CVRPMgr.inst.penaltyDuration;
+        penaltyCapacityLS = ParametersMgr.inst.penaltyCapacity;
+        penaltyDurationLS = ParametersMgr.inst.penaltyDuration;
         LoadIndividual(randomIndiv);
 
         /*// Shuffling the order of the nodes explored by the LS to allow for more diversity in the search
@@ -1478,16 +1473,16 @@ public class LocalSearchMgr : MonoBehaviour
             orderRoutes[i] = orderRoutes[j];
             orderRoutes[j] = temp;
         }
-        for (int i = 1; i <= CVRPMgr.inst.problem.customers; i++)
+        for (int i = 1; i <= ParametersMgr.inst.problem.customers; i++)
         {
-            if (Random.Range(0, CVRPMgr.inst.ap.nbGranular) == 0) // O(n/nbGranular) calls to the inner function on average, to achieve linear-time complexity overall
+            if (Random.Range(0, ParametersMgr.inst.ap.nbGranular) == 0) // O(n/nbGranular) calls to the inner function on average, to achieve linear-time complexity overall
             {
-                for (int k = CVRPMgr.inst.correlatedVertices[i].Count - 1; k > 0; k--)
+                for (int k = ParametersMgr.inst.correlatedVertices[i].Count - 1; k > 0; k--)
                 {
                     int j = Random.Range(0, k + 1);
-                    int temp = CVRPMgr.inst.correlatedVertices[i][k];
-                    CVRPMgr.inst.correlatedVertices[i][k] = CVRPMgr.inst.correlatedVertices[i][j];
-                    CVRPMgr.inst.correlatedVertices[i][j] = temp;
+                    int temp = ParametersMgr.inst.correlatedVertices[i][k];
+                    ParametersMgr.inst.correlatedVertices[i][k] = ParametersMgr.inst.correlatedVertices[i][j];
+                    ParametersMgr.inst.correlatedVertices[i][j] = temp;
                 }
             }
         }*/
@@ -1529,7 +1524,7 @@ public class LocalSearchMgr : MonoBehaviour
             
         }
 
-        if(visited.Count != CVRPMgr.inst.problem.vehicles)
+        if(visited.Count != ParametersMgr.inst.problem.vehicles)
         {
             Debug.LogError($"Missing vertices, has count {visited.Count}");
         }
@@ -1540,7 +1535,7 @@ public class LocalSearchMgr : MonoBehaviour
 
     string PrintCost()
     {
-        float cost = 0;
+        double cost = 0;
         foreach (Route route in routes)
             cost += route.duration;
         string costPrint = ($"Total Cost: {cost}");

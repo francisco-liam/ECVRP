@@ -45,18 +45,20 @@ public class GraphMgr : MonoBehaviour
     {
         nodes = new List<GraphNode>();
 
-        Vector3 depotOffset = new Vector3(CVRPMgr.inst.problem.nodes[0].coordinate.x,
-            CVRPMgr.inst.problem.nodes[0].coordinate.y, 0);
+        Vector3 depotOffset = new Vector3((float) ParametersMgr.inst.cli[0].coordX,
+            (float) ParametersMgr.inst.cli[0].coordY, 0);
 
-        foreach (CVRPNode node in CVRPMgr.inst.problem.nodes)
+        for (int i = 0; i < ParametersMgr.inst.cli.Count; i++)
         {
-            GameObject newNode = Instantiate(nodePrefab, node.coordinate, Quaternion.identity, nodesParent);
+            Client node = ParametersMgr.inst.cli[i];
+            Vector2 coordinate = new Vector2((float)node.coordX, (float)node.coordY);
+            GameObject newNode = Instantiate(nodePrefab, coordinate, Quaternion.identity, nodesParent);
             newNode.transform.position -= depotOffset;
-            newNode.name = $"Node {node.nodeNumber}";
+            newNode.name = $"Node {i+1}";
             
             GraphNode nodeAsset = newNode.AddComponent<GraphNode>();
-            nodeAsset.nodeIndex = node.nodeNumber - 1;
-            nodeAsset.coordinate = node.coordinate;
+            nodeAsset.nodeIndex = i;
+            nodeAsset.coordinate = coordinate;
             nodeAsset.demand = node.demand;
             nodes.Add(nodeAsset);
         }

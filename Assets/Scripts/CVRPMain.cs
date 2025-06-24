@@ -19,7 +19,8 @@ public class CVRPMain : MonoBehaviour
     void Start()
     {
         Random.InitState(seed);
-        CVRPMgr.inst.Init();
+        InstanceCVRPMgr.inst.ReadInstance();
+        ParametersMgr.inst.Init();
         GraphMgr.inst.CreateGraph();
         StatsMgr.inst.InitValues();
         StatsMgr.inst.InitRun();
@@ -27,7 +28,7 @@ public class CVRPMain : MonoBehaviour
         SplitMgr.inst.InitValues();
         PopulationMgr.inst.InitValues();
         GeneticMgr.inst.Init();
-        LocalSearchMgr.inst.Init();
+        //LocalSearchMgr.inst.Init();
         run = 0;
     }
 

@@ -1,4 +1,5 @@
 using System.Collections;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.PlayerLoop;
@@ -6,18 +7,18 @@ using UnityEngine.PlayerLoop;
 public class StatsMgr : MonoBehaviour
 {
     public static StatsMgr inst;
-    public List<float> bestCosts;
+    public List<double> bestCosts;
     public List<int> speeds;
     public List<int> seeds;
-    public List<List<float>> averageTotalPopulationFitness;
-    public List<List<float>> averageFeasiblePopulationFitness;
-    public List<List<float>> averageInfeasiblePopulationFitness;
-    public List<List<float>> maxTotalPopulationFitness;
-    public List<List<float>> maxFeasiblePopulationFitness;
-    public List<List<float>> maxInfeasiblePopulationFitness;
-    public List<List<float>> minTotalPopulationCost;
-    public List<List<float>> minFeasiblePopulationCost;
-    public List<List<float>> minInfeasiblePopulationCost;
+    public List<List<double>> averageTotalPopulationFitness;
+    public List<List<double>> averageFeasiblePopulationFitness;
+    public List<List<double>> averageInfeasiblePopulationFitness;
+    public List<List<double>> maxTotalPopulationFitness;
+    public List<List<double>> maxFeasiblePopulationFitness;
+    public List<List<double>> maxInfeasiblePopulationFitness;
+    public List<List<double>> minTotalPopulationCost;
+    public List<List<double>> minFeasiblePopulationCost;
+    public List<List<double>> minInfeasiblePopulationCost;
 
     private void Awake()
     {
@@ -36,12 +37,12 @@ public class StatsMgr : MonoBehaviour
         
     }
 
-    float GetAverageTotalPopulationFitness()
+    double GetAverageTotalPopulationFitness()
     {
         if (PopulationMgr.inst.feasibleSubpop.Count + PopulationMgr.inst.infeasibleSubpop.Count == 0)
             return 0;
 
-        float sumFitness = 0;
+        double sumFitness = 0;
 
         foreach (Individual indiv in PopulationMgr.inst.feasibleSubpop)
             sumFitness += indiv.biasedFitness;
@@ -51,12 +52,12 @@ public class StatsMgr : MonoBehaviour
         return sumFitness / (PopulationMgr.inst.feasibleSubpop.Count + PopulationMgr.inst.infeasibleSubpop.Count);
     }
 
-    float GetAverageFeasiblePopulationFitness()
+    double GetAverageFeasiblePopulationFitness()
     {
         if (PopulationMgr.inst.feasibleSubpop.Count == 0)
             return 0;
 
-        float sumFitness = 0;
+        double sumFitness = 0;
 
         foreach (Individual indiv in PopulationMgr.inst.feasibleSubpop)
             sumFitness += indiv.biasedFitness;
@@ -64,12 +65,12 @@ public class StatsMgr : MonoBehaviour
         return sumFitness / PopulationMgr.inst.feasibleSubpop.Count;
     }
 
-    float GetAverageInfeasiblePopulationFitness()
+    double GetAverageInfeasiblePopulationFitness()
     {
         if (PopulationMgr.inst.infeasibleSubpop.Count == 0)
             return 0;
 
-        float sumFitness = 0;
+        double sumFitness = 0;
 
         foreach (Individual indiv in PopulationMgr.inst.infeasibleSubpop)
             sumFitness += indiv.biasedFitness;
@@ -77,12 +78,12 @@ public class StatsMgr : MonoBehaviour
         return sumFitness / PopulationMgr.inst.infeasibleSubpop.Count;
     }
 
-    float GetMaxTotalPopulationFitness()
+    double GetMaxTotalPopulationFitness()
     {
         if (PopulationMgr.inst.feasibleSubpop.Count + PopulationMgr.inst.infeasibleSubpop.Count == 0)
             return 0;
 
-        float maxFitness = 0;
+        double maxFitness = 0;
 
         foreach (Individual indiv in PopulationMgr.inst.feasibleSubpop)
         {
@@ -98,12 +99,12 @@ public class StatsMgr : MonoBehaviour
         return maxFitness;
     }
 
-    float GetMaxFeasiblePopulationFitness()
+    double GetMaxFeasiblePopulationFitness()
     {
         if (PopulationMgr.inst.feasibleSubpop.Count == 0)
             return 0;
 
-        float maxFitness = 0;
+        double maxFitness = 0;
 
         foreach (Individual indiv in PopulationMgr.inst.feasibleSubpop)
         {
@@ -114,12 +115,12 @@ public class StatsMgr : MonoBehaviour
         return maxFitness;
     }
 
-    float GetMaxInfeasiblePopulationFitness()
+    double GetMaxInfeasiblePopulationFitness()
     {
         if (PopulationMgr.inst.infeasibleSubpop.Count == 0)
             return 0;
 
-        float maxFitness = 0;
+        double maxFitness = 0;
 
         foreach (Individual indiv in PopulationMgr.inst.infeasibleSubpop)
         {
@@ -130,24 +131,24 @@ public class StatsMgr : MonoBehaviour
         return maxFitness;
     }
 
-    float GetMinTotalPopulationCost()
+    double GetMinTotalPopulationCost()
     {
         if (PopulationMgr.inst.feasibleSubpop.Count > 0 && PopulationMgr.inst.infeasibleSubpop.Count > 0)
-            return Mathf.Min(GetMinFeasiblePopulationCost(), GetMinInfeasiblePopulationCost());
+            return Math.Min(GetMinFeasiblePopulationCost(), GetMinInfeasiblePopulationCost());
         else if (PopulationMgr.inst.feasibleSubpop.Count > 0)
             return GetMinFeasiblePopulationCost();
         else
             return GetMinInfeasiblePopulationCost();
     }
 
-    float GetMinFeasiblePopulationCost()
+    double GetMinFeasiblePopulationCost()
     {
         Individual indiv = PopulationMgr.inst.GetBestFeasible();
         if(indiv == null) return 0;
         else return indiv.eval.penalizedCost;
     }
 
-    float GetMinInfeasiblePopulationCost()
+    double GetMinInfeasiblePopulationCost()
     {
         Individual indiv = PopulationMgr.inst.GetBestInfeasible();
         if (indiv == null) return 0;
@@ -165,14 +166,14 @@ public class StatsMgr : MonoBehaviour
         }
     }
 
-    public List<float> CalculateGenerationAveragesOverRuns(List<List<float>> list)
+    public List<double> CalculateGenerationAveragesOverRuns(List<List<double>> list)
     {
-        List<float> result = new List<float>();
+        List<double> result = new List<double>();
 
-        for(int i = 0; i < CVRPMgr.inst.ap.nbIter; i++)
+        for(int i = 0; i < ParametersMgr.inst.ap.nbIter; i++)
         {
-            float sum = 0;
-            foreach(List<float> run in list)
+            double sum = 0;
+            foreach(List<double> run in list)
                 sum += run[i];
 
             result.Add(sum / list.Count);
@@ -187,15 +188,15 @@ public class StatsMgr : MonoBehaviour
         seeds.Add(CVRPMain.inst.seed);
         bestCosts.Add(float.MaxValue);
         speeds.Add(int.MaxValue);
-        averageTotalPopulationFitness.Add(new List<float>());
-        averageFeasiblePopulationFitness.Add(new List<float>());
-        averageInfeasiblePopulationFitness.Add(new List<float>());
-        maxTotalPopulationFitness.Add(new List<float>());
-        maxFeasiblePopulationFitness.Add(new List<float>());
-        maxInfeasiblePopulationFitness.Add(new List<float>());
-        minTotalPopulationCost.Add(new List<float>());
-        minFeasiblePopulationCost.Add(new List<float>());
-        minInfeasiblePopulationCost.Add(new List<float>());
+        averageTotalPopulationFitness.Add(new List<double>());
+        averageFeasiblePopulationFitness.Add(new List<double>());
+        averageInfeasiblePopulationFitness.Add(new List<double>());
+        maxTotalPopulationFitness.Add(new List<double>());
+        maxFeasiblePopulationFitness.Add(new List<double>());
+        maxInfeasiblePopulationFitness.Add(new List<double>());
+        minTotalPopulationCost.Add(new List<double>());
+        minFeasiblePopulationCost.Add(new List<double>());
+        minInfeasiblePopulationCost.Add(new List<double>());
 
     }
 
@@ -216,16 +217,16 @@ public class StatsMgr : MonoBehaviour
     public void InitValues()
     {
         seeds = new List<int>();
-        bestCosts = new List<float>();
+        bestCosts = new List<double>();
         speeds = new List<int>();
-        averageTotalPopulationFitness = new List<List<float>>();
-        averageFeasiblePopulationFitness = new List<List<float>>();
-        averageInfeasiblePopulationFitness = new List<List<float>>();
-        maxTotalPopulationFitness = new List<List<float>>();
-        maxFeasiblePopulationFitness = new List<List<float>>();
-        maxInfeasiblePopulationFitness = new List<List<float>>();
-        minTotalPopulationCost = new List<List<float>>();
-        minFeasiblePopulationCost = new List<List<float>>();
-        minInfeasiblePopulationCost = new List<List<float>>();
+        averageTotalPopulationFitness = new List<List<double>>();
+        averageFeasiblePopulationFitness = new List<List<double>>();
+        averageInfeasiblePopulationFitness = new List<List<double>>();
+        maxTotalPopulationFitness = new List<List<double>>();
+        maxFeasiblePopulationFitness = new List<List<double>>();
+        maxInfeasiblePopulationFitness = new List<List<double>>();
+        minTotalPopulationCost = new List<List<double>>();
+        minFeasiblePopulationCost = new List<List<double>>();
+        minInfeasiblePopulationCost = new List<List<double>>();
     }
 }

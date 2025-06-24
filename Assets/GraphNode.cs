@@ -6,7 +6,7 @@ public class GraphNode : MonoBehaviour
 {
     public int nodeIndex;
     public Vector2 coordinate;
-    public float demand;
+    public double demand;
     
     // Start is called before the first frame update
     void Start()

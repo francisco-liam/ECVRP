@@ -14,7 +14,7 @@ public class InstanceCVRPMgr : MonoBehaviour
 
     public int nbClients = 0;
     public double vehicleCapacity = double.MaxValue;
-    public double durationLimit = 0.0;
+    public double durationLimit = 1e30;
     public bool isDurationConstraint = false;
     public bool isRoundingInteger = true; // Set to true if distances should be rounded
 
@@ -29,13 +29,9 @@ public class InstanceCVRPMgr : MonoBehaviour
         inst = this;
     }
 
-    private void Start()
+    public void ReadInstance()
     {
-        ReadInstance(AssetDatabase.GetAssetPath(file));
-    }
-
-    public void ReadInstance(string pathToInstance)
-    {
+        string pathToInstance = AssetDatabase.GetAssetPath(file);
         string content, content2, content3;
         double serviceTimeData = 0.0;
 

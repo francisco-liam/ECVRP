@@ -44,7 +44,7 @@ public class FileWriterMgr : MonoBehaviour
         }
     }
 
-    public void WriteGraphCSV(string fileName, List<float> data)
+    public void WriteGraphCSV(string fileName, List<double> data)
     {
         string filePath = Path.Combine(directoryPath, fileName);
 

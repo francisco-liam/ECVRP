@@ -7,11 +7,11 @@ using Random = UnityEngine.Random;
 [System.Serializable]
 public class EvalIndiv
 {
-    public float penalizedCost = 0;       // Penalized cost of the solution
+    public double penalizedCost = 0;       // Penalized cost of the solution
     public int nbRoutes = 0;               // Number of routes
-    public float distance = 0;            // Total distance
-    public float capacityExcess = 0;      // Sum of excess load in all routes
-    public float durationExcess = 0;      // Sum of excess duration in all routes
+    public double distance = 0;            // Total distance
+    public double capacityExcess = 0;      // Sum of excess load in all routes
+    public double durationExcess = 0;      // Sum of excess duration in all routes
     public bool isFeasible = false;		    // Feasibility status of the individual
 
     public EvalIndiv() 
@@ -43,8 +43,8 @@ public class Individual
     public List<List<int>> chromR;                               // For each vehicle, the associated sequence of deliveries (complete solution)
     public int[] successors;                                            // For each node, the successor in the solution (can be the depot 0)
     public int[] predecessors;                                      // For each node, the predecessor in the solution (can be the depot 0)
-    public SortedList<float, List<Individual>> indivsPerProximity = new SortedList<float, List<Individual>>();   // The other individuals in the population, ordered by increasing proximity (the set container follows a natural ordering based on the first value of the pair)
-    public float biasedFitness;														// Biased fitness of the solution
+    public SortedList<double, List<Individual>> indivsPerProximity = new SortedList<double, List<Individual>>();   // The other individuals in the population, ordered by increasing proximity (the set container follows a natural ordering based on the first value of the pair)
+    public double biasedFitness;														// Biased fitness of the solution
 
     // Start is called before the first frame update
     void Start()
@@ -61,45 +61,45 @@ public class Individual
     public void EvaluateCompleteCost()
     {
         eval = new EvalIndiv();
-        for (int r = 0; r < CVRPMgr.inst.problem.vehicles; r++)
+        for (int r = 0; r < ParametersMgr.inst.nbVehicles; r++)
         {
             if (chromR[r].Count != 0)
             {
-                float distance = CVRPMgr.inst.problem.adjacencyMatrix[0, chromR[r][0]];
-                float load = CVRPMgr.inst.problem.nodes[chromR[r][0]].demand;
+                double distance = ParametersMgr.inst.timeCost[0][chromR[r][0]];
+                double load = ParametersMgr.inst.cli[chromR[r][0]].demand;
                 //double service = params.cli[chromR[r][0]].serviceDuration;
                 predecessors[chromR[r][0]] = 0;
                 for(int i = 1; i < chromR[r].Count; i++)
                 {
-                    distance += CVRPMgr.inst.problem.adjacencyMatrix[chromR[r][i - 1], chromR[r][i]];
-                    load += CVRPMgr.inst.problem.nodes[chromR[r][i]].demand;
+                    distance += ParametersMgr.inst.timeCost[chromR[r][i - 1]][chromR[r][i]];
+                    load += ParametersMgr.inst.cli[chromR[r][i]].demand;
                     //service += params.cli[chromR[r][i]].serviceDuration;
                     predecessors[chromR[r][i]] = chromR[r][i - 1];
                     successors[chromR[r][i - 1]] = chromR[r][i];
                 }
                 successors[chromR[r][chromR[r].Count - 1]] = 0;
-                distance += CVRPMgr.inst.problem.adjacencyMatrix[chromR[r][chromR[r].Count - 1], 0];
+                distance += ParametersMgr.inst.timeCost[chromR[r][chromR[r].Count - 1]][0];
                 eval.distance += distance;
                 eval.nbRoutes++;
-                if (load > CVRPMgr.inst.problem.capacity) eval.capacityExcess += load - CVRPMgr.inst.problem.capacity;
-                if (distance /*+ service*/ > CVRPMgr.inst.durationLimit) eval.durationExcess += distance /*+ service*/ - CVRPMgr.inst.durationLimit;
+                if (load > ParametersMgr.inst.vehicleCapacity) eval.capacityExcess += load - ParametersMgr.inst.vehicleCapacity;
+                if (distance /*+ service*/ > ParametersMgr.inst.durationLimit) eval.durationExcess += distance /*+ service*/ - ParametersMgr.inst.durationLimit;
             }
         }
 
-        eval.penalizedCost = eval.distance + eval.capacityExcess * CVRPMgr.inst.penaltyCapacity + eval.durationExcess * CVRPMgr.inst.penaltyDuration;
-        eval.isFeasible = (eval.capacityExcess < 0.00001f && eval.durationExcess < 0.00001f);
+        eval.penalizedCost = eval.distance + eval.capacityExcess * ParametersMgr.inst.penaltyCapacity + eval.durationExcess * ParametersMgr.inst.penaltyDuration;
+        eval.isFeasible = (eval.capacityExcess < 0.00001 && eval.durationExcess < 0.00001);
     }
 
     public Individual()
     {
         eval = new EvalIndiv();
-        successors = new int[CVRPMgr.inst.problem.customers + 1];
-        predecessors = new int[CVRPMgr.inst.problem.customers + 1];
+        successors = new int[ParametersMgr.inst.nbClients + 1];
+        predecessors = new int[ParametersMgr.inst.nbClients + 1];
         chromR = new List<List<int>>();
-        for(int i = 0; i < CVRPMgr.inst.problem.vehicles; i++)
+        for(int i = 0; i < ParametersMgr.inst.nbVehicles; i++)
             chromR.Add(new List<int>());
-        chromT = new int[CVRPMgr.inst.problem.customers];
-        for (int i = 0; i < CVRPMgr.inst.problem.customers; i++)
+        chromT = new int[ParametersMgr.inst.nbClients];
+        for (int i = 0; i < ParametersMgr.inst.nbClients; i++)
             chromT[i] = i + 1;
 
         // Shuffle using Fisher–Yates algorithm with Unity's Random
@@ -138,7 +138,7 @@ public class Individual
         Array.Copy(other.predecessors, predecessors, other.predecessors.Length);
 
         // Deep copy of indivsPerProximity
-        indivsPerProximity = new SortedList<float, List<Individual>>();
+        indivsPerProximity = new SortedList<double, List<Individual>>();
         foreach (var kvp in other.indivsPerProximity)
         {
             var listCopy = new List<Individual>(kvp.Value); // Shallow copy of list elements
