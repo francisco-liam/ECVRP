@@ -1,6 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
 using UnityEngine;
 
 [System.Serializable]
@@ -18,7 +22,7 @@ public class AlgorithmParameters
     public float penaltyDecrease;       // Multiplier used to decrease penalty parameters if there are sufficient feasible individuals
     public float penaltyIncrease;       // Multiplier used to increase penalty parameters if there are insufficient feasible individuals
 
-    public int seed;               // Random seed. Default value: 0
+    public uint seed;               // Random seed. Default value: 0
     public int nbIter;             // Nb iterations without improvement until termination (or restart if a time limit is specified). Default value: 20,000 iterations
     public int nbIterTraces;       // Number of iterations between traces display during HGS execution
     public float timeLimit;       // CPU time limit until termination in seconds. Default value: 0 (i.e., inactive)
@@ -72,7 +76,7 @@ public class ParametersMgr : MonoBehaviour
     public float startTime;                  // Start time of the optimization (set when Params is constructed)
 
     /* RANDOM NUMBER GENERATOR */
-    //std::minstd_rand ran;               // Using the fastest and simplest LCG. The quality of random numbers is not critical for the LS, but speed is
+    public MyRNG ran;               // Using the fastest and simplest LCG. The quality of random numbers is not critical for the LS, but speed is
 
     /* DATA OF THE PROBLEM INSTANCE */
     public bool isDurationConstraint;                              // Indicates if the problem includes duration constraints
@@ -107,6 +111,8 @@ public class ParametersMgr : MonoBehaviour
 
     public void Init()
     {
+        Debug.Log(ap.seed);
+        ran = new MyRNG(ap.seed);
         List<double> x_coords = InstanceCVRPMgr.inst.x_coords;
         List<double> y_coords = InstanceCVRPMgr.inst.y_coords;
         List<double> service_time = InstanceCVRPMgr.inst.service_time;
@@ -200,8 +206,20 @@ public class ParametersMgr : MonoBehaviour
 
         // Filling the vector of correlated vertices
         for (int i = 1; i <= nbClients; i++)
-            foreach (int x in setCorrelatedVertices[i])
-                correlatedVertices[i].Add(x);
+        {
+            List<int> sorted = setCorrelatedVertices[i].ToList();
+            sorted.Sort();
+            correlatedVertices[i].AddRange(sorted);
+        }
+
+        /*string path = Path.Combine(Application.dataPath, "init_verts.txt");
+        using (StreamWriter writer = new StreamWriter(path, false, Encoding.ASCII))
+        {
+            foreach (var row in correlatedVertices)
+            {
+                writer.WriteLine(string.Join(" ", row));
+            }
+        }*/
 
         // A reasonable scale for the initial values of the penalties
         penaltyDuration = 1;

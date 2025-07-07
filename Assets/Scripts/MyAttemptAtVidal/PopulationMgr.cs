@@ -50,7 +50,7 @@ public class PopulationMgr : MonoBehaviour
             SplitMgr.inst.GeneralSplit(randomIndiv, ParametersMgr.inst.nbVehicles);
             LocalSearchMgr.inst.Run(randomIndiv, ParametersMgr.inst.penaltyCapacity, ParametersMgr.inst.penaltyDuration); // Repair half of the solutions in case of infeasibility
             AddIndividual(randomIndiv, true);
-            if(!randomIndiv.eval.isFeasible && Random.Range(0, 2) % 2 == 0)
+            if(!randomIndiv.eval.isFeasible && ParametersMgr.inst.ran.LCG() % 2 == 0)
             {
                 LocalSearchMgr.inst.Run(randomIndiv, ParametersMgr.inst.penaltyCapacity*10, ParametersMgr.inst.penaltyDuration*10);
                 if (randomIndiv.eval.isFeasible) AddIndividual(randomIndiv, false);
@@ -255,8 +255,8 @@ public class PopulationMgr : MonoBehaviour
     public Individual GetBinaryTournament()
     {
         // Picking two individuals with uniform distribution over the union of the feasible and infeasible subpopulations
-        int place1 = Random.Range(0, feasibleSubpop.Count + infeasibleSubpop.Count);
-        int place2 = Random.Range(0, feasibleSubpop.Count + infeasibleSubpop.Count);
+        int place1 = ParametersMgr.inst.ran.Range(0, feasibleSubpop.Count + infeasibleSubpop.Count - 1);
+        int place2 = ParametersMgr.inst.ran.Range(0, feasibleSubpop.Count + infeasibleSubpop.Count - 1);
 
         Individual indiv1 = (place1 >= (int)feasibleSubpop.Count) ? infeasibleSubpop[place1 - feasibleSubpop.Count] : feasibleSubpop[place1];
         Individual indiv2 = (place2 >= (int)feasibleSubpop.Count) ? infeasibleSubpop[place2 - feasibleSubpop.Count] : feasibleSubpop[place2];

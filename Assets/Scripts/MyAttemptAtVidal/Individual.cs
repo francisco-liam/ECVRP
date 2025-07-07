@@ -102,14 +102,7 @@ public class Individual
         for (int i = 0; i < ParametersMgr.inst.nbClients; i++)
             chromT[i] = i + 1;
 
-        // Shuffle using Fisher–Yates algorithm with Unity's Random
-        for (int i = chromT.Length - 1; i > 0; i--)
-        {
-            int j = Random.Range(0, i + 1);
-            int temp = chromT[i];
-            chromT[i] = chromT[j];
-            chromT[j] = temp;
-        }
+        ParametersMgr.inst.ran.Shuffle(chromT);
         eval.penalizedCost = 1e30f;
         EvaluateCompleteCost();
     }

@@ -1,5 +1,7 @@
+using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -172,7 +174,7 @@ public class LocalSearchMgr : MonoBehaviour
     int nodeVPrevIndex, nodeVIndex, nodeYIndex, nodeYNextIndex;
     double loadU, loadX, loadV, loadY;
     double serviceU, serviceX, serviceV, serviceY;
-    double penaltyCapacityLS, penaltyDurationLS;
+    public double penaltyCapacityLS, penaltyDurationLS;
     bool intraRouteMove;
 
     double[][] matrix;
@@ -296,38 +298,33 @@ public class LocalSearchMgr : MonoBehaviour
         LoadIndividual(indiv);
 
         // Shuffling the order of the nodes explored by the LS to allow for more diversity in the search
-        for (int i = orderNodes.Count - 1; i > 0; i--)
-        {
-            int j = Random.Range(0, i + 1);
-            int temp = orderNodes[i];
-            orderNodes[i] = orderNodes[j];
-            orderNodes[j] = temp;
-        }
-        for (int i = orderRoutes.Count - 1; i > 0; i--)
-        {
-            int j = Random.Range(0, i + 1);
-            int temp = orderRoutes[i];
-            orderRoutes[i] = orderRoutes[j];
-            orderRoutes[j] = temp;
-        }
+        ParametersMgr.inst.ran.Shuffle(orderNodes);
+        ParametersMgr.inst.ran.Shuffle(orderRoutes);
         for (int i = 1; i <= ParametersMgr.inst.nbClients; i++)
         {
-            if (Random.Range(0, ParametersMgr.inst.ap.nbGranular) == 0) // O(n/nbGranular) calls to the inner function on average, to achieve linear-time complexity overall
+            if (ParametersMgr.inst.ran.LCG() % ParametersMgr.inst.ap.nbGranular == 0) // O(n/nbGranular) calls to the inner function on average, to achieve linear-time complexity overall
             {
-                for (int k = ParametersMgr.inst.correlatedVertices[i].Count - 1; k > 0; k--)
-                {
-                    int j = Random.Range(0, k + 1);
-                    int temp = ParametersMgr.inst.correlatedVertices[i][k];
-                    ParametersMgr.inst.correlatedVertices[i][k] = ParametersMgr.inst.correlatedVertices[i][j];
-                    ParametersMgr.inst.correlatedVertices[i][j] = temp;
-                }
+                ParametersMgr.inst.ran.Shuffle(ParametersMgr.inst.correlatedVertices[i]);
             }
         }
+
+        /*Debug.Log(BasicsChecking.PrintList(orderNodes));
+        Debug.Log(BasicsChecking.PrintList(orderRoutes));
+        string directoryPath = Path.Combine(Application.dataPath, "correlated_verts.txt");
+        using (StreamWriter writer = new StreamWriter(directoryPath))
+        {
+            foreach (List<int> row in ParametersMgr.inst.correlatedVertices)
+            {
+                writer.WriteLine(string.Join(" ", row));
+            }
+        }*/
+
+        List<Tuple<int,int,int>> moves = new List<Tuple<int, int, int>>();
 
         searchCompleted = false;
         for (loopID = 0; !searchCompleted; loopID++)
         {   
-            if(loopID <= 9) { 
+            if(loopID <= 100) { 
             
                 printInMove = false;
                 if (loopID > 1) // Allows at least two loops since some moves involving empty routes are not checked at the first loop
@@ -348,26 +345,26 @@ public class LocalSearchMgr : MonoBehaviour
                             // Randomizing the order of the neighborhoods within this loop does not matter much as we are already randomizing the order of the node pairs (and it's not very common to find improving moves of different types for the same node pair)
                             SetLocalVariablesRouteU();
                             SetLocalVariablesRouteV();
-                            if (Move1()) continue; // RELOCATE
-                            if (Move2()) continue; // RELOCATE
-                            if (Move3()) continue; // RELOCATE
-                            if (nodeUIndex <= nodeVIndex && Move4()) continue; // SWAP
-                            if (Move5()) continue; // SWAP
-                            if (nodeUIndex <= nodeVIndex && Move6()) continue; // SWAP
-                            if (intraRouteMove && Move7()) continue; // 2-OPT
-                            if (!intraRouteMove && Move8()) continue; // 2-OPT*
-                            if (!intraRouteMove && Move9()) continue; // 2-OPT*
+                            if (Move1()) { moves.Add(new Tuple<int, int, int>(nodeU.cour, nodeV.cour, 1)); continue; } // RELOCATE
+                            if (Move2()) { moves.Add(new Tuple<int, int, int>(nodeU.cour, nodeV.cour, 2)); continue; } // RELOCATE
+                            if (Move3()) { moves.Add(new Tuple<int, int, int>(nodeU.cour, nodeV.cour, 3)); continue; } // RELOCATE
+                            if (nodeUIndex <= nodeVIndex && Move4()) { moves.Add(new Tuple<int, int, int>(nodeU.cour, nodeV.cour, 4)); continue; } // SWAP
+                            if (Move5()) { moves.Add(new Tuple<int, int, int>(nodeU.cour, nodeV.cour, 5)); continue; } // SWAP
+                            if (nodeUIndex <= nodeVIndex && Move6()) { moves.Add(new Tuple<int, int, int>(nodeU.cour, nodeV.cour, 6)); continue; } // SWAP
+                            if (intraRouteMove && Move7()) { moves.Add(new Tuple<int, int, int>(nodeU.cour, nodeV.cour, 7)); continue; } // 2-OPT
+                            if (!intraRouteMove && Move8()) { moves.Add(new Tuple<int, int, int>(nodeU.cour, nodeV.cour, 8)); continue; } // 2-OPT*
+                            if (!intraRouteMove && Move9()) { moves.Add(new Tuple<int, int, int>(nodeU.cour, nodeV.cour, 9)); continue; } // 2-OPT*
 
                             // Trying moves that insert nodeU directly after the depot
                             if (nodeV.prev.isDepot)
                             {
                                 nodeV = nodeV.prev;
                                 SetLocalVariablesRouteV();
-                                if (Move1()) continue; // RELOCATE
-                                if (Move2()) continue; // RELOCATE
-                                if (Move3()) continue; // RELOCATE
-                                if (!intraRouteMove && Move8()) continue; // 2-OPT*
-                                if (!intraRouteMove && Move9()) continue; // 2-OPT*
+                                if (Move1()) { moves.Add(new Tuple<int, int, int>(nodeU.cour, nodeV.cour, 1)); continue; } // RELOCATE
+                                if (Move2()) { moves.Add(new Tuple<int, int, int>(nodeU.cour, nodeV.cour, 2)); continue; } // RELOCATE
+                                if (Move3()) { moves.Add(new Tuple<int, int, int>(nodeU.cour, nodeV.cour, 3)); continue; } // RELOCATE
+                                if (!intraRouteMove && Move8()) { moves.Add(new Tuple<int, int, int>(nodeU.cour, nodeV.cour, 8)); continue; } // 2-OPT*
+                                if (!intraRouteMove && Move9()) { moves.Add(new Tuple<int, int, int>(nodeU.cour, nodeV.cour, 9)); continue; } // 2-OPT*
                             }
                         }
                     }
@@ -378,10 +375,10 @@ public class LocalSearchMgr : MonoBehaviour
                         nodeV = routes[emptyRoutes.First()].depot;
                         SetLocalVariablesRouteU();
                         SetLocalVariablesRouteV();
-                        if (Move1()) continue; // RELOCATE
-                        if (Move2()) continue; // RELOCATE
-                        if (Move3()) continue; // RELOCATE
-                        if (Move9()) continue; // 2-OPT*
+                        if (Move1()) { moves.Add(new Tuple<int, int, int>(nodeU.cour, nodeV.cour, 1)); continue; } // RELOCATE
+                        if (Move2()) { moves.Add(new Tuple<int, int, int>(nodeU.cour, nodeV.cour, 2)); continue; } // RELOCATE
+                        if (Move3()) { moves.Add(new Tuple<int, int, int>(nodeU.cour, nodeV.cour, 3)); continue; } // RELOCATE
+                        if (Move9()) { moves.Add(new Tuple<int, int, int>(nodeU.cour, nodeV.cour, 9)); continue; } // 2-OPT*
                     }
                 }
 
@@ -400,7 +397,8 @@ public class LocalSearchMgr : MonoBehaviour
                                 && (loopID == 0 || Mathf.Max(routeU.whenLastModified, routeV.whenLastModified)
                                     > lastTestSWAPStarRouteU))
                                 if (CircleSector.overlap(routeU.sector, routeV.sector))
-                                    SwapStar();
+                                    if (SwapStar())
+                                    { moves.Add(new Tuple<int, int, int>(routeU.cour, routeV.cour, 10)); };
                         }
                     }
                 }
@@ -489,7 +487,36 @@ public class LocalSearchMgr : MonoBehaviour
             }   
         }
 
+        /*directoryPath = Path.Combine(Application.dataPath, "moves.txt");
+        using (StreamWriter writer = new StreamWriter(directoryPath))
+        {
+            foreach (var tuple in moves)
+            {
+                writer.WriteLine($"{tuple.Item1} {tuple.Item2} {tuple.Item3}");
+            }
+        }*/
+
         ExportIndividual(indiv);
+    }
+
+    public bool PerformMove(int u, int v, int move)
+    {
+        nodeU = clients[u];
+        nodeV = clients[v];
+        SetLocalVariablesRouteU();
+        SetLocalVariablesRouteV();
+        if (move == 1) return Move1();
+        else if (move == 2) return Move2();
+        else if (move == 3) return Move3();
+        else if (move == 4) return Move4();
+        else if (move == 5) return Move5();
+        else if (move == 6) return Move6();
+        else if (move == 7) return Move7();
+        else if (move == 8) return Move8();
+        else if (move == 9) return Move9();
+        else if (move == 10) return SwapStar();
+
+        return false;
     }
 
     double PenaltyExcessDuration(double myDuration)
@@ -696,7 +723,7 @@ public class LocalSearchMgr : MonoBehaviour
     }
 
     //(M5) If u, x, and v are customer visits, swap u and x with v
-    bool Move5()
+    public bool Move5()
     {
         double costSuppU = matrix[nodeUPrevIndex][nodeVIndex]
             + matrix[nodeVIndex][nodeXNextIndex]
@@ -725,8 +752,7 @@ public class LocalSearchMgr : MonoBehaviour
 
         if (costSuppU + costSuppV > -MY_EPSILON)
             return false;
-        if (nodeU == nodeV.prev || nodeX == nodeV.prev || nodeU == nodeY || 
-            nodeX.isDepot || nodeU.isDepot || nodeY.isDepot)
+        if (nodeU == nodeV.prev || nodeX == nodeV.prev || nodeU == nodeY || nodeX.isDepot)
             return false;
 
         SwapNode(nodeU, nodeV);
@@ -1253,7 +1279,7 @@ public class LocalSearchMgr : MonoBehaviour
         }
     }
 
-    void LoadIndividual(Individual indiv)
+    public void LoadIndividual(Individual indiv)
     {
         emptyRoutes.Clear();
         nbMoves = 0;
@@ -1299,7 +1325,7 @@ public class LocalSearchMgr : MonoBehaviour
     }
 
 
-    void ExportIndividual(Individual indiv)
+    public void ExportIndividual(Individual indiv)
     {
         List<Tuple<double, int>> routePolarAngles = new List<Tuple<double, int>>();
         for (int r = 0; r < ParametersMgr.inst.nbVehicles; r++)
@@ -1315,7 +1341,7 @@ public class LocalSearchMgr : MonoBehaviour
             int counter = 0;
             while (!node.isDepot && counter < 10000)
             {
-                //chromT[pos] = node.cour;
+                indiv.chromT[pos] = node.cour;
                 indiv.chromR[r].Add(node.cour);
                 node = node.next;
                 pos++;
@@ -1457,35 +1483,6 @@ public class LocalSearchMgr : MonoBehaviour
         penaltyCapacityLS = ParametersMgr.inst.penaltyCapacity;
         penaltyDurationLS = ParametersMgr.inst.penaltyDuration;
         LoadIndividual(randomIndiv);
-
-        /*// Shuffling the order of the nodes explored by the LS to allow for more diversity in the search
-        for (int i = orderNodes.Count - 1; i > 0; i--)
-        {
-            int j = Random.Range(0, i + 1);
-            int temp = orderNodes[i];
-            orderNodes[i] = orderNodes[j];
-            orderNodes[j] = temp;
-        }
-        for (int i = orderRoutes.Count - 1; i > 0; i--)
-        {
-            int j = Random.Range(0, i + 1);
-            int temp = orderRoutes[i];
-            orderRoutes[i] = orderRoutes[j];
-            orderRoutes[j] = temp;
-        }
-        for (int i = 1; i <= ParametersMgr.inst.problem.customers; i++)
-        {
-            if (Random.Range(0, ParametersMgr.inst.ap.nbGranular) == 0) // O(n/nbGranular) calls to the inner function on average, to achieve linear-time complexity overall
-            {
-                for (int k = ParametersMgr.inst.correlatedVertices[i].Count - 1; k > 0; k--)
-                {
-                    int j = Random.Range(0, k + 1);
-                    int temp = ParametersMgr.inst.correlatedVertices[i][k];
-                    ParametersMgr.inst.correlatedVertices[i][k] = ParametersMgr.inst.correlatedVertices[i][j];
-                    ParametersMgr.inst.correlatedVertices[i][j] = temp;
-                }
-            }
-        }*/
 
         loopID = 0;
 

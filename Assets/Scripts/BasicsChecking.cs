@@ -26,7 +26,7 @@ public class BasicsChecking : MonoBehaviour
         
     }
 
-    public static string PrintList<T>(List<T> list)
+    public static string PrintList<T>(IEnumerable<T> list)
     {
         return string.Join(" ", list);
     }

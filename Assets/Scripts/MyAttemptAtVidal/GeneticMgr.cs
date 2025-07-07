@@ -19,10 +19,12 @@ public class GeneticMgr : MonoBehaviour
         
     }
 
-    public int nbIter = 0;
-    public int nbIterNonProd = 1;
+    public int nbIter;
+    public int nbIterNonProd;
     public void Init()
     {
+        nbIter = -1;
+        nbIterNonProd = 1;
         PopulationMgr.inst.GeneratePopulation();
         Debug.Log($"----- STARTING GENETIC ALGORITHM RUN {CVRPMain.inst.run}");
     }
@@ -42,6 +44,7 @@ public class GeneticMgr : MonoBehaviour
             {
                 running = true;
                 nbIter++;
+                //Debug.Log(nbIter);
 
                 /* SELECTION AND CROSSOVER */
                 Individual offspring = CrossoverOX(PopulationMgr.inst.GetBinaryTournament(), PopulationMgr.inst.GetBinaryTournament());
@@ -49,7 +52,7 @@ public class GeneticMgr : MonoBehaviour
                 /* LOCAL SEARCH */
                 LocalSearchMgr.inst.Run(offspring, ParametersMgr.inst.penaltyCapacity, ParametersMgr.inst.penaltyDuration);
                 bool isNewBest = PopulationMgr.inst.AddIndividual(offspring, true);
-                if (!offspring.eval.isFeasible && Random.Range(0, 2) % 2 == 0) // Repair half of the solutions in case of infeasibility
+                if (!offspring.eval.isFeasible && ParametersMgr.inst.ran.LCG() % 2 == 0) // Repair half of the solutions in case of infeasibility
                 {
                     LocalSearchMgr.inst.Run(offspring, ParametersMgr.inst.penaltyCapacity * 10, ParametersMgr.inst.penaltyDuration * 10); ;
                     if (offspring.eval.isFeasible) isNewBest = (PopulationMgr.inst.AddIndividual(offspring, false) || isNewBest);
@@ -110,8 +113,8 @@ public class GeneticMgr : MonoBehaviour
             nbIter = 0;
             nbIterNonProd = 1;
             CVRPMain.inst.run++;
-            CVRPMain.inst.seed++;
-            Random.InitState(CVRPMain.inst.seed);
+            ParametersMgr.inst.ap.seed++;
+            ParametersMgr.inst.ran = new MyRNG(ParametersMgr.inst.ap.seed);
             StatsMgr.inst.InitRun();
             PopulationMgr.inst.Restart();
             Debug.Log($"----- STARTING GENETIC ALGORITHM RUN {CVRPMain.inst.run}");
@@ -127,11 +130,11 @@ public class GeneticMgr : MonoBehaviour
         bool[] freqClient = new bool[ParametersMgr.inst.nbClients + 1];
 
         // Picking the beginning and end of the crossover zone
-        int start = Random.Range(0, ParametersMgr.inst.nbClients);
-        int end = Random.Range(0, ParametersMgr.inst.nbClients);
+        int start = ParametersMgr.inst.ran.Range(0, ParametersMgr.inst.nbClients - 1);
+        int end = ParametersMgr.inst.ran.Range(0, ParametersMgr.inst.nbClients - 1);
 
         // Avoid that start and end coincide by accident
-        while (end == start) end = Random.Range(0, ParametersMgr.inst.nbClients);
+        while (end == start) end = ParametersMgr.inst.ran.Range(0, ParametersMgr.inst.nbClients - 1);
 
         // Copy from start to end
         int j = start;
