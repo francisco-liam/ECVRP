@@ -111,7 +111,6 @@ public class ParametersMgr : MonoBehaviour
 
     public void Init()
     {
-        Debug.Log(ap.seed);
         ran = new MyRNG(ap.seed);
         List<double> x_coords = InstanceCVRPMgr.inst.x_coords;
         List<double> y_coords = InstanceCVRPMgr.inst.y_coords;
@@ -211,15 +210,6 @@ public class ParametersMgr : MonoBehaviour
             sorted.Sort();
             correlatedVertices[i].AddRange(sorted);
         }
-
-        /*string path = Path.Combine(Application.dataPath, "init_verts.txt");
-        using (StreamWriter writer = new StreamWriter(path, false, Encoding.ASCII))
-        {
-            foreach (var row in correlatedVertices)
-            {
-                writer.WriteLine(string.Join(" ", row));
-            }
-        }*/
 
         // A reasonable scale for the initial values of the penalties
         penaltyDuration = 1;

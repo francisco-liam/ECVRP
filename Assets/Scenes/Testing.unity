@@ -604,10 +604,6 @@ MonoBehaviour:
   movesPerformed: 
   penaltyCapacityLS: 0
   penaltyDurationLS: 0
-  moveFunction: 0
-  uIndex: 0
-  vIndex: 0
-  prev: 0
 --- !u!4 &1100029508
 Transform:
   m_ObjectHideFlags: 0
@@ -667,7 +663,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 686ebb9f3115a0040b931c75cf66c645, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  file: {fileID: 102900000, guid: ab4742cbf02a81f4386d5172e9f1e6fc, type: 3}
+  file: {fileID: 102900000, guid: d3eae3b6b9ba67f42aca9553bfd807a7, type: 3}
   nbClients: 0
   vehicleCapacity: 1.7976931348623157e+308
   durationLimit: 1.7976931348623157e+308

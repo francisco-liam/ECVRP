@@ -32,30 +32,6 @@ public class CVRPMain : MonoBehaviour
         SplitMgr.inst.InitValues();
         PopulationMgr.inst.InitValues();
         GeneticMgr.inst.Init();
-        LocalSearchMgr.inst.Init();
-
-        /*Individual randomIndiv = new Individual();
-        SplitMgr.inst.GeneralSplit(randomIndiv, ParametersMgr.inst.nbVehicles);
-        LocalSearchMgr.inst.Run(randomIndiv, ParametersMgr.inst.penaltyCapacity, ParametersMgr.inst.penaltyDuration);
-        
-        /string path = AssetDatabase.GetAssetPath(moves);
-        List<Tuple<int, int, int>> tuples = ReadTuplesFromFile(path, 154);
-
-        LocalSearchMgr.inst.penaltyCapacityLS = ParametersMgr.inst.penaltyCapacity;
-        LocalSearchMgr.inst.penaltyDurationLS = ParametersMgr.inst.penaltyDuration;
-        LocalSearchMgr.inst.LoadIndividual(randomIndiv);
-
-        foreach(Tuple<int, int, int> tuple in tuples)
-            LocalSearchMgr.inst.PerformMove(tuple.Item1, tuple.Item2, tuple.Item3);
-
-        Debug.Log(LocalSearchMgr.inst.PerformMove(7, 74, 5));
-
-        LocalSearchMgr.inst.ExportIndividual(randomIndiv);
-
-        Debug.Log(BasicsChecking.PrintList(randomIndiv.chromT));
-
-        foreach (List<int> route in randomIndiv.chromR)
-            Debug.Log(BasicsChecking.PrintList(route));*/
         run = 0;
     }
 
