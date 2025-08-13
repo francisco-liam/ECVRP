@@ -107,14 +107,18 @@ public class PopulationMgr : MonoBehaviour
 
                 StatsMgr.inst.bestCosts[CVRPMain.inst.run] = indiv.eval.penalizedCost;
                 StatsMgr.inst.speeds[CVRPMain.inst.run] = GeneticMgr.inst.nbIter;
+                StatsMgr.inst.times[CVRPMain.inst.run] = Time.realtimeSinceStartup - ParametersMgr.inst.startTime;
 
-                GraphMgr.inst.RemoveAllEdges();
-                foreach (List<int> route in indiv.chromR)
+                if (CVRPMain.inst.graph)
                 {
-                    if(route.Count > 0)
+                    GraphMgr.inst.RemoveAllEdges();
+                    foreach (List<int> route in indiv.chromR)
                     {
-                        Color randomColor = new Color(Random.value, Random.value, Random.value);
-                        GraphMgr.inst.DrawRoute(route, randomColor);
+                        if (route.Count > 0)
+                        {
+                            Color randomColor = new Color(Random.value, Random.value, Random.value);
+                            GraphMgr.inst.DrawRoute(route, randomColor);
+                        }
                     }
                 }
             }
@@ -270,7 +274,7 @@ public class PopulationMgr : MonoBehaviour
 
     public Individual GetBestFeasible()
     {
-        if (feasibleSubpop.Count != 0) return feasibleSubpop[0];
+        if (feasibleSubpop != null && feasibleSubpop.Count != 0) return feasibleSubpop[0];
         else return null;
     }
 

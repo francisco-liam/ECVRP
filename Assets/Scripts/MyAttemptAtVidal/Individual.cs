@@ -35,7 +35,6 @@ public class EvalIndiv
     }
 };
 
-[System.Serializable]
 public class Individual
 {
     public EvalIndiv eval;                                                         // Solution cost parameters

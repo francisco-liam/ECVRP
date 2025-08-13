@@ -66,7 +66,7 @@ public class ECVRPMgr : MonoBehaviour
 
     public void Init()
     {
-        problem = DataMgr.inst.ReadEVRPFile();
+        //problem = DataMgr.inst.ReadEVRPFile();
 
     }
 }

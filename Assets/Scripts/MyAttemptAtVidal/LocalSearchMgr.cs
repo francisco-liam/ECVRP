@@ -56,7 +56,6 @@ public class CircleSector
 };
 
 
-[System.Serializable]
 public class Node
 {
     public bool isDepot;                       // Tells whether this node represents a depot or not
@@ -72,7 +71,6 @@ public class Node
     public double deltaRemoval;				// Difference of cost in the current route if the node is removed (used in SWAP*)
 };
 
-[System.Serializable]
 // Structure containing a route
 public class Route
 {

@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using UnityEditor.Search;
 using UnityEngine;
 
 [System.Serializable]
@@ -97,7 +96,6 @@ public class SplitMgr : MonoBehaviour
     public double[] sumDistance;
     public double[] sumLoad;
     public int maxVehicles;
-    public ArrayVisualizer visualizer;
 
     double[,] potential;
     int[,] pred;

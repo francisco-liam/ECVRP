@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor.UI;
 using UnityEngine;
 using UnityEngine.U2D;
 using static UnityEngine.Networking.UnityWebRequest;
@@ -31,10 +30,11 @@ public class GeneticMgr : MonoBehaviour
 
     public bool running;
     public bool write;
+    public bool done;
     // Update is called once per frame
     void Update()
     {
-        if (running)//Input.GetKeyDown(KeyCode.Alpha1))
+        if (running)
         {
             bool condition = ParametersMgr.inst.ap.useSetNbOfIter ? nbIter < ParametersMgr.inst.ap.nbIter :
                 nbIterNonProd <= ParametersMgr.inst.ap.nbIter &&
@@ -88,23 +88,9 @@ public class GeneticMgr : MonoBehaviour
                 {
                     FileWriterMgr.inst.AppendMetricCSV();
                     FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[1],
-                        StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.averageTotalPopulationFitness));
-                    FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[2],
-                        StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.averageFeasiblePopulationFitness));
-                    FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[3],
-                        StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.averageInfeasiblePopulationFitness));
-                    FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[4],
-                        StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.maxTotalPopulationFitness));
-                    FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[5],
-                        StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.maxFeasiblePopulationFitness));
-                    FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[6],
-                        StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.maxInfeasiblePopulationFitness));
-                    FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[7],
-                        StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.minTotalPopulationCost));
-                    FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[8],
                         StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.minFeasiblePopulationCost));
-                    FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[9],
-                        StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.minInfeasiblePopulationCost));
+                    FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[2],
+                        StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.avgFeasiblePopulationCost));
                 }
             }
         }
@@ -114,11 +100,16 @@ public class GeneticMgr : MonoBehaviour
             nbIterNonProd = 1;
             CVRPMain.inst.run++;
             ParametersMgr.inst.ap.seed++;
+            ParametersMgr.inst.startTime = Time.realtimeSinceStartup;
             ParametersMgr.inst.ran = new MyRNG(ParametersMgr.inst.ap.seed);
             StatsMgr.inst.InitRun();
             PopulationMgr.inst.Restart();
             Debug.Log($"----- STARTING GENETIC ALGORITHM RUN {CVRPMain.inst.run}");
             running = true;
+        }
+        else
+        {
+            done = true;
         }
     }
 
