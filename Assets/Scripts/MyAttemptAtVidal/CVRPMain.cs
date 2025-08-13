@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -52,12 +53,18 @@ public class CVRPMain : MonoBehaviour
         inst = this;
     }
 
-    public TextAsset[] assets;
+    public List<TextAsset> assets;
 
     // Start is called before the first frame update
     void Start()
     {
         QualitySettings.vSyncCount = 0; // Disable VSync
+        assets = new List<TextAsset>();
+        assets.Add(null);
+        assets.Add(null);
+        assets.Add(null);
+        assets.Add(null);
+        assets.Add(null);
         //InstanceCVRPMgr.inst.file = assets[0];
         //FileWriterMgr.inst.instanceName = assets[0].name;
         //StartGA();
@@ -65,7 +72,7 @@ public class CVRPMain : MonoBehaviour
 
     public void StartGA()
     {
-        FileWriterMgr.inst.instanceName = dropdown.options[dropdown.value].text;
+        FileWriterMgr.inst.instanceName = assets[instance].name;
         FileWriterMgr.inst.Init();
         InstanceCVRPMgr.inst.ReadInstance();
         ParametersMgr.inst.Init();
@@ -88,15 +95,14 @@ public class CVRPMain : MonoBehaviour
     bool ran = false;
     void Update()
     {
-        /*if (GeneticMgr.inst.done && instance < assets.Length - 1)
+        if (GeneticMgr.inst.done && instance < assets.Count - 1)
         {
             instance++;
             run = 0;
             GeneticMgr.inst.done = false;
             InstanceCVRPMgr.inst.file = assets[instance];
             ParametersMgr.inst.ap.seed = 0;
-            FileWriterMgr.inst.instanceName = assets[instance].name;
             StartGA();
-        }*/
+        }
     }
 }

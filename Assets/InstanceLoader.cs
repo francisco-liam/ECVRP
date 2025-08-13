@@ -24,13 +24,21 @@ public class FileInfoObject
 
 public class InstanceLoader : MonoBehaviour
 {
+    public static InstanceLoader inst;
+
     public string resourceFolder = "CVRPs"; // inside Resources
     public string fileExtension = ".vrp";
 
     public List<FileInfoObject> fileList = new List<FileInfoObject>();
     public List<TextAsset> textAssets = new List<TextAsset>();
 
-    public TMP_Dropdown instanceDropdown;
+    public List<TMP_Dropdown> instanceDropdowns;
+    public bool inProgress;
+
+    public void Awake()
+    {
+        inst = this;
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -56,22 +64,22 @@ public class InstanceLoader : MonoBehaviour
 
     void GenerateDropdown()
     {
-        instanceDropdown.ClearOptions();
-        
         List<string> instanceNames = new List<string>();
         instanceNames.Add("Choose Instance");
         foreach (TextAsset obj in textAssets)
         {
             instanceNames.Add(obj.name);
         }
-        instanceDropdown.AddOptions(instanceNames);
+
+        foreach (TMP_Dropdown instanceDropdown in instanceDropdowns)
+        {
+            instanceDropdown.ClearOptions();
+            instanceDropdown.AddOptions(instanceNames);
+        }
     }
 
-    public void ChangeInstance(int option)
+    public void RunStarter()
     {
-        if (option != 0)
-            InstanceCVRPMgr.inst.file = textAssets[option - 1];
-        else
-            InstanceCVRPMgr.inst.file = null;
+        inProgress = true;
     }
 }
