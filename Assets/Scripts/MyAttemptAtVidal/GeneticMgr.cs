@@ -102,8 +102,11 @@ public class GeneticMgr : MonoBehaviour
             ParametersMgr.inst.ap.seed++;
             ParametersMgr.inst.startTime = Time.realtimeSinceStartup;
             ParametersMgr.inst.ran = new MyRNG(ParametersMgr.inst.ap.seed);
+            LocalSearchMgr.inst.InitValues();
+            SplitMgr.inst.InitValues();
             StatsMgr.inst.InitRun();
             PopulationMgr.inst.Restart();
+            System.GC.Collect();
             Debug.Log($"----- STARTING GENETIC ALGORITHM RUN {CVRPMain.inst.run}");
             running = true;
         }
