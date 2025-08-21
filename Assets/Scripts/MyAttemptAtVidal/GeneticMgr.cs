@@ -109,8 +109,7 @@ public class GeneticMgr : MonoBehaviour
         }
         else
         {
-            if(InstanceLoader.inst.inProgress)
-                done = true;
+            done = true;
         }
     }
 
