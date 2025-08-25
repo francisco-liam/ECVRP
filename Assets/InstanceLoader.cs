@@ -6,6 +6,7 @@ using TMPro;
 using UnityEngine.UI;
 using UnityEditor;
 using System.Linq;
+using UnityEngine.SceneManagement;
 
 [System.Serializable]
 public class FileInfoObject
@@ -39,16 +40,11 @@ public class InstanceLoader : MonoBehaviour
         GenerateDropdown();
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
     void LoadFiles()
     {
         // Load all TextAssets in Resources/CVRPs with the given extension
         textAssets = Resources.LoadAll<TextAsset>("CVRPs/Vrp-Set-X").ToList<TextAsset>();
+        textAssets.AddRange(Resources.LoadAll<TextAsset>("CVRPs/Vrp-Set-E").ToList<TextAsset>());
         Debug.Log($"Loaded {textAssets.Count} {fileExtension} file(s) from Resources/CVRPs/Vrp-Set-X");
     }
 
@@ -73,5 +69,10 @@ public class InstanceLoader : MonoBehaviour
             InstanceCVRPMgr.inst.file = textAssets[option - 1];
         else
             InstanceCVRPMgr.inst.file = null;
+    }
+
+    public void LoadRunScene()
+    {
+        SceneManager.LoadScene(1);
     }
 }

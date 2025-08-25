@@ -9,6 +9,9 @@ EditorBuildSettings:
     path: Assets/Scenes/SampleScene.unity
     guid: 2cda990e2423bbf4892e6590ba056729
   - enabled: 1
-    path: Assets/Scenes/Testing.unity
+    path: Assets/Scenes/InstancePicker.unity
+    guid: 3a16ddf243cd8bb42bca2727a98f7a68
+  - enabled: 1
+    path: Assets/Scenes/CVRPRun.unity
     guid: 58185ffeed503ac4fba45dc23233a00e
   m_configObjects: {}

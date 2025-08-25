@@ -58,29 +58,29 @@ public class CVRPMain : MonoBehaviour
     void Start()
     {
         QualitySettings.vSyncCount = 0; // Disable VSync
-        //InstanceCVRPMgr.inst.file = assets[0];
-        //FileWriterMgr.inst.instanceName = assets[0].name;
-        //StartGA();
+        StartGA();
     }
 
     public void StartGA()
     {
-        FileWriterMgr.inst.instanceName = dropdown.options[dropdown.value].text;
+        FileWriterMgr.inst.instanceName = InstanceCVRPMgr.inst.file.name;
         FileWriterMgr.inst.Init();
+        FileWriterMgr.inst.ReadMetricFile();
         InstanceCVRPMgr.inst.ReadInstance();
         ParametersMgr.inst.Init();
         if(graph)
             GraphMgr.inst.CreateGraph();
+        ParametersMgr.inst.startTime = Time.realtimeSinceStartup;
+        ParametersMgr.inst.ran = new MyRNG(ParametersMgr.inst.ap.seed);
         StatsMgr.inst.InitValues();
         StatsMgr.inst.InitRun();
         LocalSearchMgr.inst.InitValues();
         SplitMgr.inst.InitValues();
         PopulationMgr.inst.InitValues();
         GeneticMgr.inst.Init();
-        run = 0;
         maxRuns = 10;
         GeneticMgr.inst.running = true;
-        menu.SetActive(false);
+        //menu.SetActive(false);
     }
 
     // Update is called once per frame

@@ -105,9 +105,9 @@ public class PopulationMgr : MonoBehaviour
                 bestSolutionOverall = indiv;
                 searchProgress.Add(new Tuple<float, double>(Time.realtimeSinceStartup - ParametersMgr.inst.startTime, bestSolutionOverall.eval.penalizedCost));
 
-                StatsMgr.inst.bestCosts[CVRPMain.inst.run] = indiv.eval.penalizedCost;
-                StatsMgr.inst.speeds[CVRPMain.inst.run] = GeneticMgr.inst.nbIter;
-                StatsMgr.inst.times[CVRPMain.inst.run] = Time.realtimeSinceStartup - ParametersMgr.inst.startTime;
+                StatsMgr.inst.bestCosts = indiv.eval.penalizedCost;
+                StatsMgr.inst.speeds = GeneticMgr.inst.nbIter;
+                StatsMgr.inst.times = Time.realtimeSinceStartup - ParametersMgr.inst.startTime;
 
                 if (CVRPMain.inst.graph)
                 {

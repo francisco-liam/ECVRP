@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.U2D;
 using static UnityEngine.Networking.UnityWebRequest;
 
@@ -74,7 +75,7 @@ public class GeneticMgr : MonoBehaviour
                 }
                 */
 
-                StatsMgr.inst.RecordRunData(CVRPMain.inst.run);
+                StatsMgr.inst.RecordRunData();
             }
             else if (running)
             {
@@ -92,24 +93,16 @@ public class GeneticMgr : MonoBehaviour
                     FileWriterMgr.inst.WriteGraphCSV(FileWriterMgr.inst.fileNames[2],
                         StatsMgr.inst.CalculateGenerationAveragesOverRuns(StatsMgr.inst.avgFeasiblePopulationCost));
                 }
+                done = true;
             }
         }
         else if (CVRPMain.inst.run < CVRPMain.inst.maxRuns - 1)
         {
-            nbIter = 0;
-            nbIterNonProd = 1;
-            CVRPMain.inst.run++;
-            ParametersMgr.inst.ap.seed++;
-            ParametersMgr.inst.startTime = Time.realtimeSinceStartup;
-            ParametersMgr.inst.ran = new MyRNG(ParametersMgr.inst.ap.seed);
-            StatsMgr.inst.InitRun();
-            PopulationMgr.inst.Restart();
-            Debug.Log($"----- STARTING GENETIC ALGORITHM RUN {CVRPMain.inst.run}");
-            running = true;
+            SceneManager.LoadScene(1);
         }
         else
         {
-            done = true;
+            Application.Quit();
         }
     }
 

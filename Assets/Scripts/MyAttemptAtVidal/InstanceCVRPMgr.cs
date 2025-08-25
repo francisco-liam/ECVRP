@@ -26,7 +26,14 @@ public class InstanceCVRPMgr : MonoBehaviour
 
     void Awake()
     {
-        inst = this;
+        if (inst == null)
+        {
+            inst = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+            Destroy(gameObject);
+        
     }
 
     public void ReadInstance()

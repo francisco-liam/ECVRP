@@ -3,23 +3,16 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.PlayerLoop;
+using System.IO;
 
 public class StatsMgr : MonoBehaviour
 {
     public static StatsMgr inst;
-    public List<double> bestCosts;
-    public List<int> speeds;
-    public List<float> times;
-    public List<int> seeds;
-    public List<List<double>> averageTotalPopulationFitness;
-    public List<List<double>> averageFeasiblePopulationFitness;
-    public List<List<double>> averageInfeasiblePopulationFitness;
-    public List<List<double>> maxTotalPopulationFitness;
-    public List<List<double>> maxFeasiblePopulationFitness;
-    public List<List<double>> maxInfeasiblePopulationFitness;
-    public List<List<double>> minTotalPopulationCost;
+    public double bestCosts;
+    public int speeds;
+    public float times;
+    public uint seeds;
     public List<List<double>> minFeasiblePopulationCost;
-    public List<List<double>> minInfeasiblePopulationCost;
     public List<List<double>> avgFeasiblePopulationCost;
 
     private void Awake()
@@ -174,10 +167,10 @@ public class StatsMgr : MonoBehaviour
     {
         Individual bestFeas = PopulationMgr.inst.GetBestFeasible();
         if (bestFeas == null) return;
-        if (bestCosts[runNum] > bestFeas.eval.penalizedCost)
+        if (bestCosts > bestFeas.eval.penalizedCost)
         {
-            bestCosts[runNum] = bestFeas.eval.penalizedCost;
-            speeds[runNum] = GeneticMgr.inst.nbIter;
+            bestCosts = bestFeas.eval.penalizedCost;
+            speeds = GeneticMgr.inst.nbIter;
         }
     }
 
@@ -214,13 +207,16 @@ public class StatsMgr : MonoBehaviour
 
         List<double> result = new List<double>();
 
+        if (list.Count == 1)
+            return list[0];
+
         for(int i = 0; i < list[0].Count; i++)
         {
             double sum = 0;
-            foreach(List<double> run in list)
-                sum += run[i];
+            sum += CVRPMain.inst.run * list[0][i];
+            sum += list[1][i];
 
-            result.Add(sum / list.Count);
+            result.Add(sum / (CVRPMain.inst.run + 1));
         }
 
         return result;
@@ -229,44 +225,33 @@ public class StatsMgr : MonoBehaviour
     //assumes run # in main is initialized correctly
     public void InitRun()
     {
-        seeds.Add(CVRPMain.inst.seed);
-        bestCosts.Add(float.MaxValue);
-        speeds.Add(int.MaxValue);
-        times.Add(float.MaxValue);
-        averageTotalPopulationFitness.Add(new List<double>());
-        averageFeasiblePopulationFitness.Add(new List<double>());
-        averageInfeasiblePopulationFitness.Add(new List<double>());
-        maxTotalPopulationFitness.Add(new List<double>());
-        maxFeasiblePopulationFitness.Add(new List<double>());
-        maxInfeasiblePopulationFitness.Add(new List<double>());
-        minTotalPopulationCost.Add(new List<double>());
+        seeds = ParametersMgr.inst.ap.seed;
+        bestCosts = float.MaxValue;
+        speeds = int.MaxValue;
+        times = float.MaxValue;
+
+        if (FileWriterMgr.inst.CheckIfFileExists(FileWriterMgr.inst.fileNames[1]))
+        {
+            minFeasiblePopulationCost.Add(FileWriterMgr.inst.GetPreviousAverages(FileWriterMgr.inst.fileNames[1]));
+            Debug.Log("found");
+        }      
+        if (FileWriterMgr.inst.CheckIfFileExists(FileWriterMgr.inst.fileNames[2]))
+            avgFeasiblePopulationCost.Add(FileWriterMgr.inst.GetPreviousAverages(FileWriterMgr.inst.fileNames[2]));
+
         minFeasiblePopulationCost.Add(new List<double>());
-        minInfeasiblePopulationCost.Add(new List<double>());
         avgFeasiblePopulationCost.Add(new List<double>());
     }
 
     //ran each generation
-    public void RecordRunData(int runNum)
+    public void RecordRunData()
     {
-        minFeasiblePopulationCost[runNum].Add(GetMinFeasiblePopulationCost());
-        avgFeasiblePopulationCost[runNum].Add(GetAverageFeasiblePopulationCost());
+        minFeasiblePopulationCost[minFeasiblePopulationCost.Count-1].Add(GetMinFeasiblePopulationCost());
+        avgFeasiblePopulationCost[avgFeasiblePopulationCost.Count-1].Add(GetAverageFeasiblePopulationCost());
     }
 
     public void InitValues()
     {
-        seeds = new List<int>();
-        bestCosts = new List<double>();
-        speeds = new List<int>();
-        times = new List<float>();
-        averageTotalPopulationFitness = new List<List<double>>();
-        averageFeasiblePopulationFitness = new List<List<double>>();
-        averageInfeasiblePopulationFitness = new List<List<double>>();
-        maxTotalPopulationFitness = new List<List<double>>();
-        maxFeasiblePopulationFitness = new List<List<double>>();
-        maxInfeasiblePopulationFitness = new List<List<double>>();
-        minTotalPopulationCost = new List<List<double>>();
         minFeasiblePopulationCost = new List<List<double>>();
-        minInfeasiblePopulationCost = new List<List<double>>();
         avgFeasiblePopulationCost = new List<List<double>>();
     }
 }

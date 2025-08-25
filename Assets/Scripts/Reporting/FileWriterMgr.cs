@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -64,16 +65,95 @@ public class FileWriterMgr : MonoBehaviour
         string filePath = Path.Combine(directoryPath, fileNames[0]);
         if (CVRPMain.inst.run == 0)
             File.WriteAllText(filePath, CVRPMain.inst.run + ", " + ParametersMgr.inst.ap.seed
-                + ", " + StatsMgr.inst.bestCosts[CVRPMain.inst.run]
-                + ", " + StatsMgr.inst.speeds[CVRPMain.inst.run] 
+                + ", " + StatsMgr.inst.bestCosts
+                + ", " + StatsMgr.inst.speeds 
                 + ", " + (Time.realtimeSinceStartup - ParametersMgr.inst.startTime)
                 + ", " + GeneticMgr.inst.nbIter + "\n");
         else
             File.AppendAllText(filePath, CVRPMain.inst.run + ", " + ParametersMgr.inst.ap.seed
-                + ", " + StatsMgr.inst.bestCosts[CVRPMain.inst.run]
-                + ", " + StatsMgr.inst.speeds[CVRPMain.inst.run]
+                + ", " + StatsMgr.inst.bestCosts
+                + ", " + StatsMgr.inst.speeds
                 + ", " + (Time.realtimeSinceStartup - ParametersMgr.inst.startTime)
                 + ", " + GeneticMgr.inst.nbIter + "\n");
+    }
+
+    public void ReadMetricFile()
+    {
+        string filePath = Path.Combine(directoryPath, fileNames[0]);
+        if (!File.Exists(filePath))
+        {
+            CVRPMain.inst.run = 0;
+            ParametersMgr.inst.ap.seed = 1;
+        }
+        else
+        {
+            string lastLine = null;
+
+            // Read the last line efficiently
+            using (var reader = new StreamReader(filePath))
+            {
+                while (!reader.EndOfStream)
+                {
+                    lastLine = reader.ReadLine();
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(lastLine))
+            {
+                throw new InvalidOperationException("CSV file is empty or only contains whitespace.");
+            }
+
+            // Split by comma
+            string[] parts = lastLine.Split(',');
+
+            if (parts.Length < 2)
+            {
+                throw new InvalidOperationException("CSV does not have at least two columns.");
+            }
+
+            // Parse first two columns as ints
+            CVRPMain.inst.run = int.Parse(parts[0]) + 1;
+            ParametersMgr.inst.ap.seed = (uint) int.Parse(parts[1]) + 1;
+        }
+    }
+
+    public List<double> GetPreviousAverages(string fileName)
+    {
+        var values = new List<double>();
+
+        string filePath = Path.Combine(directoryPath, fileName);
+
+        using (var reader = new StreamReader(filePath))
+        {
+            string? line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
+
+                string[] parts = line.Split(',');
+
+                if (parts.Length < 2)
+                    continue; // skip if there's no second column
+
+                if (double.TryParse(parts[1], out double val))
+                {
+                    values.Add(val);
+                }
+                else
+                {
+                    throw new FormatException($"Could not parse '{parts[1]}' as an double.");
+                }
+            }
+        }
+
+        return values;
+    }
+
+    public bool CheckIfFileExists(string fileName)
+    {
+        Debug.Log(Path.Combine(directoryPath, fileName));
+        return File.Exists(Path.Combine(directoryPath, fileName));
     }
 
     // Start is called before the first frame update
