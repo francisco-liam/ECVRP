@@ -23,7 +23,7 @@ public class GeneticMgr : MonoBehaviour
     public int nbIterNonProd;
     public void Init()
     {
-        nbIter = -1;
+        nbIter = 0;
         nbIterNonProd = 1;
         PopulationMgr.inst.GeneratePopulation();
         Debug.Log($"----- STARTING GENETIC ALGORITHM RUN {CVRPMain.inst.run}");
