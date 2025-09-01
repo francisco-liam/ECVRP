@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/liamf/ecsl/vidal-modified/HGS-CVRP/build/cmake_install.cmake",
+		"/home/liamf/ecsl/vidal-modified/HGS-CVRP/build/Test/Test-c/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
