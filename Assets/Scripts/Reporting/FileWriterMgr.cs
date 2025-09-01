@@ -13,10 +13,17 @@ public class FileWriterMgr : MonoBehaviour
     string directoryPath;
     public List<string> fileTypes;
     public List<string> fileNames;
+    public bool addToDatabase;
 
     void Awake()
     {
-        inst = this;
+        if (inst == null)
+        {
+            inst = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+            Destroy(gameObject);
     }
 
     public void Init()
@@ -114,6 +121,20 @@ public class FileWriterMgr : MonoBehaviour
             // Parse first two columns as ints
             CVRPMain.inst.run = int.Parse(parts[0]) + 1;
             ParametersMgr.inst.ap.seed = (uint) int.Parse(parts[1]) + 1;
+        }
+    }
+
+    public void AppendMoveDataCSV(string oldRoute, string newRoute, int nodeU, int nodeV, int move, double cost)
+    {
+        if (addToDatabase)
+        {
+            string filePath = Path.Combine(directoryPath, fileNames[3]);
+            File.AppendAllText(filePath, oldRoute
+                    + ", " + newRoute
+                    + ", " + nodeU
+                    + ", " + nodeV
+                    + ", " + move
+                    + ", " + cost + "\n");
         }
     }
 

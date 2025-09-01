@@ -191,7 +191,7 @@ public class LocalSearchMgr : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
     public void Run(Individual indiv, double penaltyCapacityLS, double penaltyDurationLS)
@@ -360,11 +360,20 @@ public class LocalSearchMgr : MonoBehaviour
         if (nodeUIndex == nodeYIndex)
             return false;
 
+        string oldRoute = ReportCurrentRoute();
+        int nodeUCour = nodeU.cour;
+        int nodeVCour = nodeV.cour;
+        int move = 1;
+        double cost = costSuppU + costSuppV;
+
         InsertNode(nodeU, nodeV);
         nbMoves++;
         searchCompleted = false;
         UpdateRouteData(routeU);
         if (!intraRouteMove) UpdateRouteData(routeV);
+
+        string newRoute = ReportCurrentRoute();
+        FileWriterMgr.inst.AppendMoveDataCSV(oldRoute, newRoute, nodeUCour, nodeVCour, move, cost);
 
         return true;
     }
@@ -400,12 +409,21 @@ public class LocalSearchMgr : MonoBehaviour
         if (nodeU == nodeY || nodeV == nodeX || nodeX.isDepot)
             return false;
 
+        string oldRoute = ReportCurrentRoute();
+        int nodeUCour = nodeU.cour;
+        int nodeVCour = nodeV.cour;
+        int move = 2;
+        double cost = costSuppU + costSuppV;
+
         InsertNode(nodeU, nodeV);
         InsertNode(nodeX, nodeU);
         nbMoves++;
         searchCompleted = false;
         UpdateRouteData(routeU);
         if (!intraRouteMove) UpdateRouteData(routeV);
+
+        string newRoute = ReportCurrentRoute();
+        FileWriterMgr.inst.AppendMoveDataCSV(oldRoute, newRoute, nodeUCour, nodeVCour, move, cost);
 
         return true;
     }
@@ -443,12 +461,21 @@ public class LocalSearchMgr : MonoBehaviour
         if (nodeU == nodeY || nodeV == nodeX || nodeX.isDepot)
             return false;
 
+        string oldRoute = ReportCurrentRoute();
+        int nodeUCour = nodeU.cour;
+        int nodeVCour = nodeV.cour;
+        int move = 3;
+        double cost = costSuppU + costSuppV;
+
         InsertNode(nodeX, nodeV);
         InsertNode(nodeU, nodeX);
         nbMoves++; // Increment move counter before updating route data
         searchCompleted = false;
         UpdateRouteData(routeU);
         if (!intraRouteMove) UpdateRouteData(routeV);
+
+        string newRoute = ReportCurrentRoute();
+        FileWriterMgr.inst.AppendMoveDataCSV(oldRoute, newRoute, nodeUCour, nodeVCour, move, cost);
 
         return true;
     }
@@ -486,11 +513,20 @@ public class LocalSearchMgr : MonoBehaviour
             nodeU.isDepot || nodeV.isDepot)
             return false;
 
+        string oldRoute = ReportCurrentRoute();
+        int nodeUCour = nodeU.cour;
+        int nodeVCour = nodeV.cour;
+        int move = 4;
+        double cost = costSuppU + costSuppV;
+
         SwapNode(nodeU, nodeV);
         nbMoves++; // Increment move counter before updating route data
         searchCompleted = false;
         UpdateRouteData(routeU);
         if (!intraRouteMove) UpdateRouteData(routeV);
+
+        string newRoute = ReportCurrentRoute();
+        FileWriterMgr.inst.AppendMoveDataCSV(oldRoute, newRoute, nodeUCour, nodeVCour, move, cost);
 
         return true;
     }
@@ -528,12 +564,21 @@ public class LocalSearchMgr : MonoBehaviour
         if (nodeU == nodeV.prev || nodeX == nodeV.prev || nodeU == nodeY || nodeX.isDepot)
             return false;
 
+        string oldRoute = ReportCurrentRoute();
+        int nodeUCour = nodeU.cour;
+        int nodeVCour = nodeV.cour;
+        int move = 5;
+        double cost = costSuppU + costSuppV;
+
         SwapNode(nodeU, nodeV);
         InsertNode(nodeX, nodeU);
         nbMoves++; // Increment move counter before updating route data
         searchCompleted = false;
         UpdateRouteData(routeU);
         if (!intraRouteMove) UpdateRouteData(routeV);
+
+        string newRoute = ReportCurrentRoute();
+        FileWriterMgr.inst.AppendMoveDataCSV(oldRoute, newRoute, nodeUCour, nodeVCour, move, cost);
 
         return true;
     }
@@ -569,12 +614,21 @@ public class LocalSearchMgr : MonoBehaviour
         if (nodeX.isDepot || nodeY.isDepot || nodeU.isDepot || nodeV.isDepot
             || nodeY == nodeU.prev || nodeU == nodeY || nodeX == nodeV || nodeV == nodeX.next) return false;
 
+        string oldRoute = ReportCurrentRoute();
+        int nodeUCour = nodeU.cour;
+        int nodeVCour = nodeV.cour;
+        int move = 6;
+        double cost = costSuppU + costSuppV;
+
         SwapNode(nodeU, nodeV);
         SwapNode(nodeX, nodeY);
         nbMoves++; // Increment move counter before updating route data
         searchCompleted = false;
         UpdateRouteData(routeU);
         if (!intraRouteMove) UpdateRouteData(routeV);
+
+        string newRoute = ReportCurrentRoute();
+        FileWriterMgr.inst.AppendMoveDataCSV(oldRoute, newRoute, nodeUCour, nodeVCour, move, cost);
 
         return true;
     }
@@ -592,6 +646,11 @@ public class LocalSearchMgr : MonoBehaviour
 
         if (cost > -MY_EPSILON) return false;
         if (nodeU.next == nodeV) return false;
+
+        string oldRoute = ReportCurrentRoute();
+        int nodeUCour = nodeU.cour;
+        int nodeVCour = nodeV.cour;
+        int move = 7;
 
         Node nodeNum = nodeX.next;
         nodeX.prev = nodeNum;
@@ -613,6 +672,9 @@ public class LocalSearchMgr : MonoBehaviour
         nbMoves++; // Increment move counter before updating route data
         searchCompleted = false;
         UpdateRouteData(routeU);
+
+        string newRoute = ReportCurrentRoute();
+        FileWriterMgr.inst.AppendMoveDataCSV(oldRoute, newRoute, nodeUCour, nodeVCour, move, cost);
 
         return true;
     }
@@ -638,6 +700,11 @@ public class LocalSearchMgr : MonoBehaviour
             + PenaltyExcessLoad(routeU.load + routeV.load - nodeU.cumulatedLoad - nodeV.cumulatedLoad);
 
         if (cost > -MY_EPSILON) return false;
+
+        string oldRoute = ReportCurrentRoute();
+        int nodeUCour = nodeU.cour;
+        int nodeVCour = nodeV.cour;
+        int move = 8;
 
         Node depotU = routeU.depot;
         Node depotV = routeV.depot;
@@ -701,6 +768,9 @@ public class LocalSearchMgr : MonoBehaviour
         UpdateRouteData(routeU);
         UpdateRouteData(routeV);
 
+        string newRoute = ReportCurrentRoute();
+        FileWriterMgr.inst.AppendMoveDataCSV(oldRoute, newRoute, nodeUCour, nodeVCour, move, cost);
+
         return true;
     }
 
@@ -724,6 +794,11 @@ public class LocalSearchMgr : MonoBehaviour
             + PenaltyExcessLoad(nodeV.cumulatedLoad + routeU.load - nodeU.cumulatedLoad);
 
         if (cost > -MY_EPSILON) return false;
+
+        string oldRoute = ReportCurrentRoute();
+        int nodeUCour = nodeU.cour;
+        int nodeVCour = nodeV.cour;
+        int move = 9;
 
         Node depotU = routeU.depot;
         Node depotV = routeV.depot;
@@ -770,6 +845,9 @@ public class LocalSearchMgr : MonoBehaviour
         searchCompleted = false;
         UpdateRouteData(routeU);
         UpdateRouteData(routeV);
+
+        string newRoute = ReportCurrentRoute();
+        FileWriterMgr.inst.AppendMoveDataCSV(oldRoute, newRoute, nodeUCour, nodeVCour, move, cost);
 
         return true;
     }
@@ -853,6 +931,12 @@ public class LocalSearchMgr : MonoBehaviour
 
         if (myBestSwapStar.moveCost > -MY_EPSILON) return false;
 
+        string oldRoute = ReportCurrentRoute();
+        int nodeUCour = nodeU.cour;
+        int nodeVCour = nodeV.cour;
+        int move = 10;
+        double cost = myBestSwapStar.moveCost;
+
         // Applying the best move in case of improvement
         if (myBestSwapStar.bestPositionU != null) InsertNode(myBestSwapStar.U, myBestSwapStar.bestPositionU);
         if (myBestSwapStar.bestPositionV != null) InsertNode(myBestSwapStar.V, myBestSwapStar.bestPositionV);
@@ -860,6 +944,10 @@ public class LocalSearchMgr : MonoBehaviour
         searchCompleted = false;
         UpdateRouteData(routeU);
         UpdateRouteData(routeV);
+
+        string newRoute = ReportCurrentRoute();
+        FileWriterMgr.inst.AppendMoveDataCSV(oldRoute, newRoute, nodeUCour, nodeVCour, move, cost);
+
         return true;
     }
 
@@ -1149,5 +1237,24 @@ public class LocalSearchMgr : MonoBehaviour
             orderNodes.Add(i);
         for (int r = 0; r < ParametersMgr.inst.nbVehicles; r++)
             orderRoutes.Add(r);
+    }
+
+    string ReportCurrentRoute()
+    {
+        string output = "";
+        foreach (Route route in routes)
+        {
+            int nodeIndex = route.depot.next.cour;
+            if(nodeIndex != 0)
+            {
+                while (nodeIndex != 0)
+                {
+                    output += "" + nodeIndex + "-";
+                    nodeIndex = clients[nodeIndex].next.cour;
+                }
+                output += "-";
+            }
+        }
+        return output;
     }
 }
